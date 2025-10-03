@@ -133,7 +133,7 @@ export function SetupNotice() {
             </Button>
             <Button variant="outline" asChild className="flex-1">
               <a
-                href="https://github.com/yourusername/edusync/blob/main/QUICKSTART.md"
+                href="https://github.com/ArhanAnsari/edusync/blob/main/QUICKSTART.md"
                 target="_blank"
                 rel="noopener noreferrer"
               >
