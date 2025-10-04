@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi } from 'lucide-react';
+import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TeacherDashboard() {
@@ -75,11 +75,11 @@ export default function TeacherDashboard() {
 
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                  {user.name.charAt(0).toUpperCase()}
+                  {user?.name?.charAt(0).toUpperCase() || 'T'}
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                  <p className="text-sm font-medium">{user?.name || 'Teacher'}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user?.role || 'teacher'}</p>
                 </div>
               </div>
 
@@ -97,7 +97,7 @@ export default function TeacherDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl font-bold mb-2">Welcome back, {user.name}!</h1>
+          <h1 className="text-4xl font-bold mb-2">Welcome back, {user?.name || 'Teacher'}!</h1>
           <p className="text-gray-600 mb-8">Manage your classes and track student progress</p>
 
           {/* Stats Grid */}
@@ -129,7 +129,7 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Quick Actions */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <ActionCard
               title="Study Materials"
               description="Upload and manage study materials for students"
@@ -150,6 +150,13 @@ export default function TeacherDashboard() {
               icon={BookOpen}
               href="/dashboard/teacher/quizzes"
               color="purple"
+            />
+            <ActionCard
+              title="Grade Submissions"
+              description="Review and grade student work"
+              icon={FileCheck}
+              href="/dashboard/teacher/grading"
+              color="orange"
             />
           </div>
 
@@ -218,6 +225,7 @@ function ActionCard({ title, description, icon: Icon, href, color }: {
     blue: 'bg-blue-600',
     green: 'bg-green-600',
     purple: 'bg-purple-600',
+    orange: 'bg-orange-600',
   };
 
   return (

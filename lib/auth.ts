@@ -1,4 +1,4 @@
-import { account, databases, ID, config } from './appwrite';
+import { account, databases, ID, config, Permission, Role } from './appwrite';
 import { UserRole, User } from './types';
 
 export async function signup(
@@ -14,22 +14,31 @@ export async function signup(
     // Create session
     await account.createEmailPasswordSession(email, password);
 
-    // Create user profile in database
+    // Create user profile in database with proper permissions
     const userProfile = await databases.createDocument(
       config.databaseId,
       config.collections.users,
       response.$id,
       {
-        name,
+        firstName: name.split(' ')[0],
+        lastName: name.split(' ').slice(1).join(' '),
         email,
         role,
+        username: name.toLowerCase().replace(/\s+/g, ''),
+        passwordHash: password,
         createdAt: new Date().toISOString(),
-      }
+        updatedAt: new Date().toISOString(),
+      },
+      [
+        Permission.read(Role.user(response.$id)),
+        Permission.update(Role.user(response.$id)),
+        Permission.delete(Role.user(response.$id)),
+      ]
     );
 
     return {
       $id: userProfile.$id,
-      name: userProfile.name,
+      name: name, // Return the original name parameter
       email: userProfile.email,
       role: userProfile.role,
       createdAt: userProfile.createdAt,
@@ -67,10 +76,13 @@ export async function getCurrentUser(): Promise<User> {
       accountData.$id
     );
 
+    // Combine firstName and lastName to create the full name
+    const fullName = [userProfile.firstName, userProfile.lastName].filter(Boolean).join(' ') || accountData.name;
+
     return {
       $id: userProfile.$id,
-      name: userProfile.name,
-      email: userProfile.email,
+      name: fullName,
+      email: userProfile.email || accountData.email,
       role: userProfile.role,
       avatar: userProfile.avatar,
       createdAt: userProfile.createdAt,

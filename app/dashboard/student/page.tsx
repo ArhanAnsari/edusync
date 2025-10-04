@@ -76,11 +76,11 @@ export default function StudentDashboard() {
 
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                  {user.name.charAt(0).toUpperCase()}
+                  {user?.name?.charAt(0).toUpperCase() || 'S'}
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                  <p className="text-sm font-medium">{user?.name || 'Student'}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user?.role || 'student'}</p>
                 </div>
               </div>
 
@@ -100,7 +100,7 @@ export default function StudentDashboard() {
         >
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-4xl font-bold mb-2">Welcome back, {user.name}!</h1>
+              <h1 className="text-4xl font-bold mb-2">Welcome back, {user?.name || 'Student'}!</h1>
               <p className="text-gray-600">Continue your learning journey</p>
             </div>
             <div className="flex gap-2">
