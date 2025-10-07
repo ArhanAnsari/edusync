@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from 'next-themes';
+import { createContext, useContext, useMemo } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -15,50 +16,32 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // Check localStorage and system preference
-    const savedTheme = localStorage.getItem('edusync-theme') as Theme | null;
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    const initialTheme = savedTheme || systemTheme;
-    
-    setTheme(initialTheme);
-    
-    // Apply theme immediately
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(initialTheme);
-    root.style.colorScheme = initialTheme;
-    
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-    root.style.colorScheme = theme;
-    
-    localStorage.setItem('edusync-theme', theme);
-  }, [theme, mounted]);
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
-
-  // Return children immediately to prevent layout shift
+  // Delegate actual theme state to next-themes
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      storageKey="edusync-theme"
+      disableTransitionOnChange
+    >
+      <ThemeBridge>{children}</ThemeBridge>
+    </NextThemesProvider>
   );
 }
 
+function ThemeBridge({ children }: { children: React.ReactNode }) {
+  const { theme, setTheme, resolvedTheme } = useNextTheme();
+
+  const value = useMemo<ThemeContextType>(() => ({
+    theme: (theme ?? resolvedTheme ?? 'light') as Theme,
+    toggleTheme: () =>
+      setTheme((prev: string | undefined) => (prev === 'light' ? 'dark' : 'light')),
+  }), [theme, resolvedTheme, setTheme]);
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  return context;
+  return useContext(ThemeContext);
 }

@@ -3,16 +3,16 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-blue-600 text-white hover:bg-blue-700",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
-        outline: "border border-gray-300 bg-white hover:bg-gray-100 hover:text-gray-900",
-        secondary: "bg-gray-200 text-gray-900 hover:bg-gray-300",
-        ghost: "hover:bg-gray-100 hover:text-gray-900",
-        link: "text-blue-600 underline-offset-4 hover:underline",
+        default: "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:brightness-110",
+        destructive: "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] hover:brightness-110",
+        outline: "border border-[hsl(var(--border))] bg-[hsl(var(--background))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]",
+        secondary: "bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--muted))]",
+        ghost: "hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]",
+        link: "text-[hsl(var(--primary))] underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",
