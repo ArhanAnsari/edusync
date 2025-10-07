@@ -116,7 +116,7 @@ export default function TeacherQuizzesPage() {
           timeLimit,
           maxAttempts,
           questions: JSON.stringify(questions),
-          createdAt: new Date().toISOString(),
+          $createdAt: new Date().toISOString(),
           creationDate: new Date().toISOString(),
         },
         [
