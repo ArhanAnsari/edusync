@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { databases, config } from '@/lib/appwrite';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Trophy, FileText, Download, LogOut, WifiOff, Wifi, Menu, X } from 'lucide-react';
+import { BookOpen, Trophy, FileText, Download, LogOut, WifiOff, Wifi, Menu, X, Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
@@ -15,6 +16,7 @@ import Footer from '@/components/Footer';
 
 export default function StudentDashboard() {
   const { user, logout, loading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [isOnline, setIsOnline] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -99,9 +101,9 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-700">
         <div className="container mx-auto px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-4">
@@ -112,18 +114,18 @@ export default function StudentDashboard() {
                 </span>
               </Link>
               <span className="text-gray-400 hidden sm:inline">|</span>
-              <span className="text-gray-600 hidden sm:inline">Student Dashboard</span>
+              <span className="text-gray-600 dark:text-gray-300 hidden sm:inline">Student Dashboard</span>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-4">
-              <Link href="/dashboard/student/materials" className="text-sm text-gray-600 hover:text-blue-600">
+              <Link href="/dashboard/student/materials" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                 Materials
               </Link>
-              <Link href="/dashboard/student/quizzes" className="text-sm text-gray-600 hover:text-blue-600">
+              <Link href="/dashboard/student/quizzes" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                 Quizzes
               </Link>
-              <Link href="/dashboard/student/assignments" className="text-sm text-gray-600 hover:text-blue-600">
+              <Link href="/dashboard/student/assignments" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                 Assignments
               </Link>
             </div>
@@ -149,10 +151,21 @@ export default function StudentDashboard() {
                   {user?.name?.charAt(0).toUpperCase() || 'S'}
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium">{user?.name || 'Student'}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role || 'student'}</p>
+                  <p className="text-sm font-medium dark:text-gray-100">{user?.name || 'Student'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.role || 'student'}</p>
                 </div>
               </div>
+
+              {/* Theme Toggle */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleTheme}
+                className="hidden sm:flex"
+                title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              >
+                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              </Button>
 
               <Button variant="ghost" size="icon" onClick={logout} className="hidden sm:flex">
                 <LogOut className="h-5 w-5" />

@@ -3,15 +3,18 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Users, Award, Wifi, WifiOff } from 'lucide-react';
+import { Users, Award, Wifi, WifiOff, Moon, Sun } from 'lucide-react';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function HomePage() {
+  const { theme, toggleTheme } = useTheme();
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -27,9 +30,18 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex gap-2 sm:gap-4"
+            className="flex gap-2 sm:gap-4 items-center"
           >
-            <Link href="/docs" className="hidden sm:block">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={toggleTheme}
+              className="hidden sm:flex"
+              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </Button>
+            <Link href="/docs" className="hidden md:block">
               <Button variant="ghost">Docs</Button>
             </Link>
             <Link href="/login">
@@ -52,7 +64,7 @@ export default function HomePage() {
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Learn Anywhere, Anytime
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
             Offline-first collaborative learning platform that keeps education accessible
             even without internet connectivity
           </p>

@@ -45,9 +45,9 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo.png" alt="EduSync Logo" width={32} height={32} />
@@ -58,10 +58,10 @@ export default function SignupPage() {
 
           <div className="flex gap-4">
             <Link href="/docs" className="hidden sm:block">
-              <Button variant="ghost">Docs</Button>
+              <Button variant="ghost" className="dark:text-gray-300">Docs</Button>
             </Link>
             <Link href="/login">
-              <Button variant="ghost">Login</Button>
+              <Button variant="ghost" className="dark:text-gray-300">Login</Button>
             </Link>
           </div>
         </div>

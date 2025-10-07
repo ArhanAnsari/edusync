@@ -2,18 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { databases, config } from '@/lib/appwrite';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileCheck, Menu, X } from 'lucide-react';
+import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileCheck, Menu, X, Moon, Sun, Award } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
 
 export default function TeacherDashboard() {
   const { user, logout, loading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [isOnline, setIsOnline] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -97,9 +99,9 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-700">
         <div className="container mx-auto px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-4">
@@ -110,21 +112,21 @@ export default function TeacherDashboard() {
                 </span>
               </Link>
               <span className="text-gray-400 hidden sm:inline">|</span>
-              <span className="text-gray-600 hidden sm:inline">Teacher Dashboard</span>
+              <span className="text-gray-600 dark:text-gray-300 hidden sm:inline">Teacher Dashboard</span>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-4">
-              <Link href="/dashboard/teacher/materials" className="text-sm text-gray-600 hover:text-blue-600">
+              <Link href="/dashboard/teacher/materials" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                 Materials
               </Link>
-              <Link href="/dashboard/teacher/quizzes" className="text-sm text-gray-600 hover:text-blue-600">
+              <Link href="/dashboard/teacher/quizzes" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                 Quizzes
               </Link>
-              <Link href="/dashboard/teacher/assignments" className="text-sm text-gray-600 hover:text-blue-600">
+              <Link href="/dashboard/teacher/assignments" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                 Assignments
               </Link>
-              <Link href="/dashboard/teacher/grading" className="text-sm text-gray-600 hover:text-blue-600">
+              <Link href="/dashboard/teacher/grading" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                 Grading
               </Link>
             </div>
@@ -150,10 +152,21 @@ export default function TeacherDashboard() {
                   {user?.name?.charAt(0).toUpperCase() || 'T'}
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium">{user?.name || 'Teacher'}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role || 'teacher'}</p>
+                  <p className="text-sm font-medium dark:text-gray-100">{user?.name || 'Teacher'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.role || 'teacher'}</p>
                 </div>
               </div>
+
+              {/* Theme Toggle */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleTheme}
+                className="hidden sm:flex"
+                title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              >
+                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              </Button>
 
               <Button variant="ghost" size="icon" onClick={logout} className="hidden sm:flex">
                 <LogOut className="h-5 w-5" />
@@ -292,8 +305,27 @@ export default function TeacherDashboard() {
             />
           </div>
 
+          {/* Additional Actions */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <ActionCard
+              title="Award Badges"
+              description="Recognize student achievements with badges"
+              icon={Award}
+              href="/dashboard/teacher/badges"
+              color="yellow"
+              badge="New"
+            />
+            <ActionCard
+              title="View Analytics"
+              description="Track student progress and performance"
+              icon={Trophy}
+              href="/dashboard/teacher"
+              color="indigo"
+            />
+          </div>
+
           {/* Recent Activity */}
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
               <CardDescription>Latest submissions and updates</CardDescription>
@@ -332,12 +364,12 @@ function StatsCard({ icon: Icon, label, value, color }: {
       whileHover={{ scale: 1.05 }}
       transition={{ type: 'spring', stiffness: 300 }}
     >
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">{label}</p>
-              <p className="text-3xl font-bold">{value}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{label}</p>
+              <p className="text-3xl font-bold dark:text-gray-100">{value}</p>
             </div>
             <div className={`w-12 h-12 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center`}>
               <Icon className="h-6 w-6" />
@@ -349,18 +381,21 @@ function StatsCard({ icon: Icon, label, value, color }: {
   );
 }
 
-function ActionCard({ title, description, icon: Icon, href, color }: {
+function ActionCard({ title, description, icon: Icon, href, color, badge }: {
   title: string;
   description: string;
   icon: any;
   href: string;
   color: string;
+  badge?: string;
 }) {
   const colorClasses = {
     blue: 'bg-blue-600',
     green: 'bg-green-600',
     purple: 'bg-purple-600',
     orange: 'bg-orange-600',
+    yellow: 'bg-yellow-600',
+    indigo: 'bg-indigo-600',
   };
 
   return (
@@ -369,13 +404,20 @@ function ActionCard({ title, description, icon: Icon, href, color }: {
         whileHover={{ scale: 1.02 }}
         transition={{ type: 'spring', stiffness: 300 }}
       >
-        <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="p-6">
-            <div className={`w-12 h-12 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center mb-4`}>
-              <Icon className="h-6 w-6 text-white" />
+            <div className="flex items-start justify-between mb-4">
+              <div className={`w-12 h-12 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center`}>
+                <Icon className="h-6 w-6 text-white" />
+              </div>
+              {badge && (
+                <span className="px-2 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded">
+                  {badge}
+                </span>
+              )}
             </div>
-            <h3 className="text-lg font-semibold mb-2">{title}</h3>
-            <p className="text-sm text-gray-600">{description}</p>
+            <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">{title}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
           </CardContent>
         </Card>
       </motion.div>
