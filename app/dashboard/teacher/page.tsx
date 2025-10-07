@@ -4,15 +4,29 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { databases, config } from '@/lib/appwrite';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileCheck } from 'lucide-react';
+import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileCheck, Menu, X } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import Footer from '@/components/Footer';
 
 export default function TeacherDashboard() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
   const [isOnline, setIsOnline] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Real-time stats
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    assignments: 0,
+    quizzes: 0,
+    avgScore: 'N/A',
+    materials: 0,
+    pendingSubmissions: 0,
+  });
 
   useEffect(() => {
     if (!loading && (!user || user.role !== 'teacher')) {
@@ -26,11 +40,53 @@ export default function TeacherDashboard() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    if (user) {
+      fetchStats();
+    }
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, [user, loading, router]);
+
+  const fetchStats = async () => {
+    if (!user) return;
+
+    try {
+      const [users, assignments, quizzes, materials, submissions, quizAttempts] = await Promise.all([
+        databases.listDocuments(config.databaseId, config.collections.users),
+        databases.listDocuments(config.databaseId, config.collections.assignments),
+        databases.listDocuments(config.databaseId, config.collections.quizzes),
+        databases.listDocuments(config.databaseId, config.collections.materials),
+        databases.listDocuments(config.databaseId, config.collections.submissions),
+        databases.listDocuments(config.databaseId, config.collections.quizAttempts),
+      ]);
+
+      // Count students
+      const students = users.documents.filter((u: any) => u.role === 'student');
+      
+      // Count pending submissions
+      const pending = submissions.documents.filter((s: any) => s.grade === undefined || s.grade === null);
+
+      // Calculate average score from all quiz attempts
+      const scores = quizAttempts.documents.map((a: any) => a.score).filter((s: number) => s !== undefined);
+      const avgScore = scores.length > 0 
+        ? (scores.reduce((a: number, b: number) => a + b, 0) / scores.length).toFixed(1)
+        : 'N/A';
+
+      setStats({
+        totalStudents: students.length,
+        assignments: assignments.documents.length,
+        quizzes: quizzes.documents.length,
+        avgScore: avgScore,
+        materials: materials.documents.length,
+        pendingSubmissions: pending.length,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
 
   if (loading || !user) {
     return (
@@ -44,22 +100,38 @@ export default function TeacherDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Link href="/" className="flex items-center gap-2">
-                <BookOpen className="h-8 w-8 text-blue-600" />
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <Image src="/logo.png" alt="EduSync Logo" width={32} height={32} className="sm:w-8 sm:h-8" />
+                <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   EduSync
                 </span>
               </Link>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-600">Teacher Dashboard</span>
+              <span className="text-gray-400 hidden sm:inline">|</span>
+              <span className="text-gray-600 hidden sm:inline">Teacher Dashboard</span>
             </div>
 
-            <div className="flex items-center gap-4">
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center gap-4">
+              <Link href="/dashboard/teacher/materials" className="text-sm text-gray-600 hover:text-blue-600">
+                Materials
+              </Link>
+              <Link href="/dashboard/teacher/quizzes" className="text-sm text-gray-600 hover:text-blue-600">
+                Quizzes
+              </Link>
+              <Link href="/dashboard/teacher/assignments" className="text-sm text-gray-600 hover:text-blue-600">
+                Assignments
+              </Link>
+              <Link href="/dashboard/teacher/grading" className="text-sm text-gray-600 hover:text-blue-600">
+                Grading
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* Online/Offline Indicator */}
-              <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2">
                 {isOnline ? (
                   <>
                     <Wifi className="h-4 w-4 text-green-600" />
@@ -73,7 +145,64 @@ export default function TeacherDashboard() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm sm:text-base">
+                  {user?.name?.charAt(0).toUpperCase() || 'T'}
+                </div>
+                <div className="hidden md:block">
+                  <p className="text-sm font-medium">{user?.name || 'Teacher'}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user?.role || 'teacher'}</p>
+                </div>
+              </div>
+
+              <Button variant="ghost" size="icon" onClick={logout} className="hidden sm:flex">
+                <LogOut className="h-5 w-5" />
+              </Button>
+
+              {/* Mobile Menu Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden"
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden mt-4 pb-4 space-y-2 border-t pt-4">
+              <Link
+                href="/dashboard/teacher/materials"
+                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Materials
+              </Link>
+              <Link
+                href="/dashboard/teacher/quizzes"
+                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Quizzes
+              </Link>
+              <Link
+                href="/dashboard/teacher/assignments"
+                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Assignments
+              </Link>
+              <Link
+                href="/dashboard/teacher/grading"
+                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Grading
+              </Link>
+              <div className="flex items-center gap-2 px-4 py-2">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
                   {user?.name?.charAt(0).toUpperCase() || 'T'}
                 </div>
@@ -82,54 +211,57 @@ export default function TeacherDashboard() {
                   <p className="text-xs text-gray-500 capitalize">{user?.role || 'teacher'}</p>
                 </div>
               </div>
-
-              <Button variant="ghost" size="icon" onClick={logout}>
-                <LogOut className="h-5 w-5" />
+              <Button
+                onClick={logout}
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
+              >
+                <LogOut className="h-5 w-5 mr-2" />
+                Logout
               </Button>
             </div>
-          </div>
+          )}
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-6 sm:py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl font-bold mb-2">Welcome back, {user?.name || 'Teacher'}!</h1>
-          <p className="text-gray-600 mb-8">Manage your classes and track student progress</p>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Welcome back, {user?.name || 'Teacher'}!</h1>
+          <p className="text-gray-600 mb-6 sm:mb-8">Manage your classes and track student progress</p>
 
           {/* Stats Grid */}
-          <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <StatsCard
               icon={Users}
               label="Total Students"
-              value="0"
+              value={stats.totalStudents.toString()}
               color="blue"
             />
             <StatsCard
               icon={ClipboardList}
               label="Assignments"
-              value="0"
+              value={stats.assignments.toString()}
               color="green"
             />
             <StatsCard
               icon={BookOpen}
               label="Quizzes"
-              value="0"
+              value={stats.quizzes.toString()}
               color="purple"
             />
             <StatsCard
               icon={Trophy}
               label="Avg. Score"
-              value="N/A"
+              value={stats.avgScore}
               color="orange"
             />
           </div>
 
           {/* Quick Actions */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <ActionCard
               title="Study Materials"
               description="Upload and manage study materials for students"
@@ -175,6 +307,9 @@ export default function TeacherDashboard() {
           </Card>
         </motion.div>
       </main>
+
+      {/* Footer */}
+      <Footer role="teacher" />
     </div>
   );
 }

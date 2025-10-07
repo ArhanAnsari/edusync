@@ -3,7 +3,9 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Users, Award, Wifi, WifiOff } from 'lucide-react';
+import { Users, Award, Wifi, WifiOff } from 'lucide-react';
+import Image from 'next/image';
+import Footer from '@/components/Footer';
 
 export default function HomePage() {
   return (
@@ -16,7 +18,7 @@ export default function HomePage() {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-2"
           >
-            <BookOpen className="h-8 w-8 text-blue-600" />
+            <Image src="/logo.png" alt="EduSync Logo" width={32} height={32} className="sm:w-8 sm:h-8" />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               EduSync
             </span>
@@ -25,8 +27,11 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex gap-4"
+            className="flex gap-2 sm:gap-4"
           >
+            <Link href="/docs" className="hidden sm:block">
+              <Button variant="ghost">Docs</Button>
+            </Link>
             <Link href="/login">
               <Button variant="ghost">Login</Button>
             </Link>
@@ -140,11 +145,8 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-8 text-center text-gray-600">
-          <p>&copy; 2025 EduSync. Built for Hacktoberfest with ❤️</p>
-        </div>
-      </footer>
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
