@@ -117,6 +117,7 @@ export default function TeacherQuizzesPage() {
           maxAttempts,
           questions: JSON.stringify(questions),
           createdAt: new Date().toISOString(),
+          creationDate: new Date().toISOString(),
         },
         [
           Permission.read(Role.any()),
