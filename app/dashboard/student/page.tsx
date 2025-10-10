@@ -178,40 +178,64 @@ export default function StudentDashboard() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="lg:hidden mt-4 pb-4 space-y-2 border-t pt-4">
+            <div className="lg:hidden mt-4 pb-4 space-y-2 border-t dark:border-gray-700 pt-4">
               <Link
                 href="/dashboard/student/materials"
-                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                className="block px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Materials
               </Link>
               <Link
                 href="/dashboard/student/quizzes"
-                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                className="block px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Quizzes
               </Link>
               <Link
                 href="/dashboard/student/assignments"
-                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                className="block px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Assignments
               </Link>
+              
+              {/* Online/Offline Status - Mobile */}
+              <div className="flex items-center gap-2 px-4 py-2">
+                {isOnline ? (
+                  <>
+                    <Wifi className="h-4 w-4 text-green-600" />
+                    <span className="text-sm text-green-600 dark:text-green-400">Online</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-4 w-4 text-orange-600" />
+                    <span className="text-sm text-orange-600 dark:text-orange-400">Offline</span>
+                  </>
+                )}
+              </div>
+              
+              {/* User Info - Mobile */}
               <div className="flex items-center gap-2 px-4 py-2">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
                   {user?.name?.charAt(0).toUpperCase() || 'S'}
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{user?.name || 'Student'}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role || 'student'}</p>
+                  <p className="text-sm font-medium dark:text-gray-100">{user?.name || 'Student'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.role || 'student'}</p>
                 </div>
               </div>
+              
+              {/* Theme Toggle - Mobile */}
+              <div className="px-4 py-2">
+                <ModeToggle />
+              </div>
+              
               <Button
                 onClick={logout}
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
+                className="w-full bg-red-600 hover:bg-red-700 text-white mx-4"
+                style={{ width: 'calc(100% - 2rem)' }}
               >
                 <LogOut className="h-5 w-5 mr-2" />
                 Logout
@@ -229,11 +253,11 @@ export default function StudentDashboard() {
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-2">Welcome back, {user?.name || 'Student'}!</h1>
-              <p className="text-gray-600">Continue your learning journey</p>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 dark:text-white">Welcome back, {user?.name || 'Student'}!</h1>
+              <p className="text-gray-600 dark:text-gray-300">Continue your learning journey</p>
             </div>
             <div className="flex gap-2">
-              <Badge variant="secondary" className="text-base sm:text-lg px-3 sm:px-4 py-1 sm:py-2">
+              <Badge variant="secondary" className="text-sm sm:text-base lg:text-lg px-3 sm:px-4 py-1 sm:py-2">
                 <Trophy className="h-4 w-4 mr-2" />
                 {stats.badges} Badges
               </Badge>
@@ -297,21 +321,21 @@ export default function StudentDashboard() {
 
           {/* Recent Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            <Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Recent Materials</CardTitle>
                 <CardDescription>Latest study materials from teachers</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 sm:py-12 text-gray-500">
-                  <BookOpen className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-gray-400" />
+                <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
+                  <BookOpen className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
                   <p className="text-sm sm:text-base">No materials available yet</p>
                   <p className="text-xs sm:text-sm">Check back later for new content!</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Your Progress</CardTitle>
                 <CardDescription>Track your learning achievements</CardDescription>
@@ -320,23 +344,23 @@ export default function StudentDashboard() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between mb-2">
-                      <span className="text-sm">Quizzes Completed</span>
-                      <span className="text-sm font-semibold">{stats.quizzesCompleted}/{stats.totalQuizzes}</span>
+                      <span className="text-sm dark:text-gray-300">Quizzes Completed</span>
+                      <span className="text-sm font-semibold dark:text-gray-100">{stats.quizzesCompleted}/{stats.totalQuizzes}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
+                        className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-500" 
                         style={{ width: `${stats.totalQuizzes > 0 ? (stats.quizzesCompleted / stats.totalQuizzes) * 100 : 0}%` }}
                       ></div>
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between mb-2">
-                      <span className="text-sm">Assignments Submitted</span>
-                      <span className="text-sm font-semibold">0/0</span>
+                      <span className="text-sm dark:text-gray-300">Assignments Submitted</span>
+                      <span className="text-sm font-semibold dark:text-gray-100">0/0</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-600 h-2 rounded-full" style={{ width: '0%' }}></div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div className="bg-green-600 dark:bg-green-500 h-2 rounded-full" style={{ width: '0%' }}></div>
                     </div>
                   </div>
                 </div>
@@ -359,10 +383,10 @@ function StatsCard({ icon: Icon, label, value, color }: {
   color: string;
 }) {
   const colorClasses = {
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    purple: 'bg-purple-100 text-purple-600',
-    orange: 'bg-orange-100 text-orange-600',
+    blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+    green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+    purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+    orange: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
   };
 
   return (
@@ -370,15 +394,15 @@ function StatsCard({ icon: Icon, label, value, color }: {
       whileHover={{ scale: 1.05 }}
       transition={{ type: 'spring', stiffness: 300 }}
     >
-      <Card>
-        <CardContent className="p-6">
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
+        <CardContent className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">{label}</p>
-              <p className="text-3xl font-bold">{value}</p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{label}</p>
+              <p className="text-2xl sm:text-3xl font-bold dark:text-white">{value}</p>
             </div>
-            <div className={`w-12 h-12 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center`}>
-              <Icon className="h-6 w-6" />
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center`}>
+              <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
           </div>
         </CardContent>
@@ -396,9 +420,9 @@ function ActionCard({ title, description, icon: Icon, href, color, badge }: {
   badge?: string;
 }) {
   const colorClasses = {
-    blue: 'bg-blue-600',
-    green: 'bg-green-600',
-    purple: 'bg-purple-600',
+    blue: 'bg-blue-600 dark:bg-blue-500',
+    green: 'bg-green-600 dark:bg-green-500',
+    purple: 'bg-purple-600 dark:bg-purple-500',
   };
 
   return (
@@ -407,11 +431,11 @@ function ActionCard({ title, description, icon: Icon, href, color, badge }: {
         whileHover={{ scale: 1.02 }}
         transition={{ type: 'spring', stiffness: 300 }}
       >
-        <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-          <CardContent className="p-6">
+        <Card className="h-full hover:shadow-lg dark:hover:shadow-gray-900/50 transition-shadow cursor-pointer dark:bg-gray-800 dark:border-gray-700">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className={`w-12 h-12 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center`}>
-                <Icon className="h-6 w-6 text-white" />
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center`}>
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               {badge && (
                 <Badge variant="secondary" className="text-xs">
@@ -419,8 +443,8 @@ function ActionCard({ title, description, icon: Icon, href, color, badge }: {
                 </Badge>
               )}
             </div>
-            <h3 className="text-lg font-semibold mb-2">{title}</h3>
-            <p className="text-sm text-gray-600">{description}</p>
+            <h3 className="text-base sm:text-lg font-semibold mb-2 dark:text-white">{title}</h3>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{description}</p>
           </CardContent>
         </Card>
       </motion.div>
