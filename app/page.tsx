@@ -3,14 +3,12 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Users, Award, Wifi, WifiOff, Moon, Sun } from 'lucide-react';
+import { Users, Award, Wifi, WifiOff } from 'lucide-react';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
-import { useTheme } from '@/contexts/ThemeContext';
+import { ModeToggle } from '@/components/mode-toggle';
 
 export default function HomePage() {
-  const { theme, toggleTheme } = useTheme();
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
@@ -32,15 +30,9 @@ export default function HomePage() {
             animate={{ opacity: 1, x: 0 }}
             className="flex gap-2 sm:gap-4 items-center"
           >
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={toggleTheme}
-              className="hidden sm:flex"
-              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            >
-              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-            </Button>
+            <div className="hidden sm:flex">
+              <ModeToggle />
+            </div>
             <Link href="/docs" className="hidden md:block">
               <Button variant="ghost">Docs</Button>
             </Link>

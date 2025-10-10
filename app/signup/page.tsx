@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
+import { Github } from 'lucide-react';
+import { loginWithGitHub } from '@/lib/auth';
 
 export default function SignupPage() {
   const { signup, user, loading: authLoading } = useAuth();
@@ -43,6 +45,10 @@ export default function SignupPage() {
       setLoading(false);
     }
   }
+
+  const handleGitHubLogin = () => {
+    loginWithGitHub();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col">
@@ -167,9 +173,30 @@ export default function SignupPage() {
                 {loading ? 'Creating account...' : 'Create account'}
               </Button>
 
-              <div className="text-center text-sm text-gray-600">
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-[hsl(var(--border))]" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-[hsl(var(--card))] px-2 text-[hsl(var(--muted-foreground))]">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={handleGitHubLogin}
+              >
+                <Github className="mr-2 h-4 w-4" />
+                GitHub
+              </Button>
+
+              <div className="text-center text-sm text-[hsl(var(--muted-foreground))]">
                 Already have an account?{' '}
-                <Link href="/login" className="text-blue-600 hover:underline">
+                <Link href="/login" className="text-[hsl(var(--primary))] hover:underline">
                   Sign in
                 </Link>
               </div>

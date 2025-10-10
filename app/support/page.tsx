@@ -10,9 +10,9 @@ import Footer from '@/components/Footer';
 
 export default function SupportPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo.png" alt="EduSync Logo" width={32} height={32} />
@@ -23,7 +23,7 @@ export default function SupportPage() {
 
           <div className="flex gap-4">
             <Link href="/login">
-              <Button variant="ghost">Login</Button>
+              <Button variant="ghost" className="dark:text-gray-300">Login</Button>
             </Link>
             <Link href="/signup">
               <Button>Get Started</Button>
@@ -41,50 +41,50 @@ export default function SupportPage() {
         >
           {/* Hero Section */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
               Support & Help
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 dark:text-gray-300">
               We're here to help you with any questions or issues
             </p>
           </div>
 
           {/* FAQ Section */}
-          <Card className="mb-8">
+          <Card className="mb-8 dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <HelpCircle className="h-6 w-6 text-blue-600" />
+                <HelpCircle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 Frequently Asked Questions
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <h3 className="font-semibold mb-2">How do I get started?</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold mb-2 dark:text-gray-100">How do I get started?</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Sign up for an account, choose your role (student or teacher), and start exploring the dashboard. Check out our documentation for a detailed guide.
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Can I use EduSync offline?</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold mb-2 dark:text-gray-100">Can I use EduSync offline?</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Yes! EduSync is built with offline-first architecture. You can access materials, take quizzes, and work on assignments even without internet. Changes sync automatically when you're back online.
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">How do I submit an assignment?</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold mb-2 dark:text-gray-100">How do I submit an assignment?</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Navigate to the Assignments page from your student dashboard, select the assignment, and use the submission form to submit your work.
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">How does the badge system work?</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold mb-2 dark:text-gray-100">How does the badge system work?</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Teachers can award badges to recognize achievements. Badges are displayed on your student dashboard and track your progress.
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Is my data secure?</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold mb-2 dark:text-gray-100">Is my data secure?</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Yes! We use Appwrite for backend services with built-in security features. All data is encrypted and stored securely.
                 </p>
               </div>
@@ -93,10 +93,10 @@ export default function SupportPage() {
 
           {/* Contact Options */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Github className="h-5 w-5 text-gray-900" />
+                  <Github className="h-5 w-5 text-gray-900 dark:text-gray-100" />
                   GitHub Issues
                 </CardTitle>
                 <CardDescription>Report bugs or request features</CardDescription>
@@ -106,17 +106,17 @@ export default function SupportPage() {
                   href="https://github.com/ArhanAnsari/edusync/issues" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline text-sm"
+                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
                 >
                   Open an Issue →
                 </a>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-blue-600" />
+                  <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   Email Support
                 </CardTitle>
                 <CardDescription>Get help via email</CardDescription>
@@ -124,32 +124,32 @@ export default function SupportPage() {
               <CardContent>
                 <a 
                   href="mailto:arhanansari2009@gmail.com" 
-                  className="text-blue-600 hover:underline text-sm"
+                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
                 >
                   arhanansari2009@gmail.com
                 </a>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Book className="h-5 w-5 text-green-600" />
+                  <Book className="h-5 w-5 text-green-600 dark:text-green-400" />
                   Documentation
                 </CardTitle>
                 <CardDescription>Browse our guides</CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/docs" className="text-blue-600 hover:underline text-sm">
+                <Link href="/docs" className="text-blue-600 dark:text-blue-400 hover:underline text-sm">
                   View Documentation →
                 </Link>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5 text-purple-600" />
+                  <MessageCircle className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   Community
                 </CardTitle>
                 <CardDescription>Join the discussion</CardDescription>
@@ -159,7 +159,7 @@ export default function SupportPage() {
                   href="https://github.com/ArhanAnsari/edusync/discussions" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline text-sm"
+                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
                 >
                   Join Community →
                 </a>
@@ -168,27 +168,27 @@ export default function SupportPage() {
           </div>
 
           {/* Demo Accounts */}
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
             <CardHeader>
-              <CardTitle className="text-blue-900">Demo Accounts</CardTitle>
-              <CardDescription className="text-blue-700">Test the platform with these demo credentials</CardDescription>
+              <CardTitle className="text-blue-900 dark:text-blue-100">Demo Accounts</CardTitle>
+              <CardDescription className="text-blue-700 dark:text-blue-300">Test the platform with these demo credentials</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-blue-900">👨‍🏫 Teacher:</span>
-                <code className="text-xs bg-white px-3 py-1 rounded text-blue-900">teacher@demo.com / demo1234</code>
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">👨‍🏫 Teacher:</span>
+                <code className="text-xs bg-white dark:bg-gray-800 px-3 py-1 rounded text-blue-900 dark:text-blue-100">teacher@demo.com / demo1234</code>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-blue-900">👨‍🎓 Student:</span>
-                <code className="text-xs bg-white px-3 py-1 rounded text-blue-900">student@demo.com / demo1234</code>
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">👨‍🎓 Student:</span>
+                <code className="text-xs bg-white dark:bg-gray-800 px-3 py-1 rounded text-blue-900 dark:text-blue-100">student@demo.com / demo1234</code>
               </div>
             </CardContent>
           </Card>
 
           {/* Additional Resources */}
           <div className="text-center mt-12">
-            <h2 className="text-2xl font-bold mb-4">Need More Help?</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-2xl font-bold mb-4 dark:text-white">Need More Help?</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
               Check out our documentation or reach out through any of the channels above
             </p>
             <div className="flex flex-wrap gap-4 justify-center">

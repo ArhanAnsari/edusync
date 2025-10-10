@@ -154,6 +154,7 @@ export default function StudentQuizzesPage() {
         userId: user.$id,
         answers: JSON.stringify(answers),
         score,
+        attemptNumber: getAttemptCount(activeQuiz.quizId) + 1,
         completedAt: new Date().toISOString(),
         $createdAt: new Date().toISOString(),
         $updatedAt: new Date().toISOString(),

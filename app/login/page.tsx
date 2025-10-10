@@ -5,12 +5,14 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { loginWithGitHub } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
+import { Github } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, user, loading: authLoading } = useAuth();
@@ -39,6 +41,14 @@ export default function LoginPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGitHubLogin() {
+    try {
+      await loginWithGitHub();
+    } catch (err: any) {
+      setError(err.message);
     }
   }
 
@@ -121,9 +131,30 @@ export default function LoginPage() {
                 {loading ? 'Signing in...' : 'Sign in'}
               </Button>
 
-              <div className="text-center text-sm text-gray-600">
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-[hsl(var(--border))]" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-[hsl(var(--card))] px-2 text-[hsl(var(--muted-foreground))]">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={handleGitHubLogin}
+              >
+                <Github className="mr-2 h-4 w-4" />
+                GitHub
+              </Button>
+
+              <div className="text-center text-sm text-[hsl(var(--muted-foreground))]">
                 Don't have an account?{' '}
-                <Link href="/signup" className="text-blue-600 hover:underline">
+                <Link href="/signup" className="text-[hsl(var(--primary))] hover:underline">
                   Sign up
                 </Link>
               </div>
@@ -131,9 +162,9 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm font-semibold text-blue-900 mb-2">Demo Accounts:</p>
-          <div className="space-y-1 text-sm text-blue-800">
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-gray-800 rounded-lg">
+          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Demo Accounts:</p>
+          <div className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
             <p>👨‍🏫 Teacher: teacher@demo.com / demo1234</p>
             <p>👨‍🎓 Student: student@demo.com / demo1234</p>
           </div>

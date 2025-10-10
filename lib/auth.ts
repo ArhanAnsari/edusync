@@ -1,5 +1,6 @@
 import { account, databases, ID, config, Permission, Role } from './appwrite';
 import { UserRole, User } from './types';
+import { OAuthProvider } from 'appwrite';
 
 export async function signup(
   email: string,
@@ -89,6 +90,19 @@ export async function getCurrentUser(): Promise<User> {
     };
   } catch (error: any) {
     throw new Error(error.message || 'Failed to get current user');
+  }
+}
+
+export async function loginWithGitHub(): Promise<void> {
+  try {
+    // Redirect to GitHub OAuth
+    account.createOAuth2Session(
+      OAuthProvider.Github,
+      `${window.location.origin}/dashboard/student`, // success URL
+      `${window.location.origin}/login`, // failure URL
+    );
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to login with GitHub');
   }
 }
 

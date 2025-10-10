@@ -2,20 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { databases, config } from '@/lib/appwrite';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileCheck, Menu, X, Moon, Sun, Award } from 'lucide-react';
+import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileCheck, Menu, X, Award } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
+import { ModeToggle } from '@/components/mode-toggle';
 
 export default function TeacherDashboard() {
   const { user, logout, loading } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [isOnline, setIsOnline] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -158,15 +157,9 @@ export default function TeacherDashboard() {
               </div>
 
               {/* Theme Toggle */}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={toggleTheme}
-                className="hidden sm:flex"
-                title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-              >
-                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-              </Button>
+              <div className="hidden sm:flex">
+                <ModeToggle />
+              </div>
 
               <Button variant="ghost" size="icon" onClick={logout} className="hidden sm:flex">
                 <LogOut className="h-5 w-5" />
