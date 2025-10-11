@@ -23,7 +23,7 @@ export default function LiveChat() {
     // Simulate bot response
     setTimeout(() => {
       setMessages(prev => [...prev, { 
-        text: "Thanks for your message! Our team will get back to you shortly. For immediate assistance, please email support@edusync.com", 
+        text: "Thanks for your message! Our team will get back to you shortly. For immediate assistance, please email arhanansari2009@gmail.com", 
         sender: 'bot' 
       }]);
     }, 1000);
