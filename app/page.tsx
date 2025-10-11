@@ -6,13 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Users, Award, Wifi, WifiOff } from 'lucide-react';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
-import { ModeToggle } from '@/components/mode-toggle';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Header */}
-      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-700">
+      <header className="border-b bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 border-gray-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -30,9 +29,6 @@ export default function HomePage() {
             animate={{ opacity: 1, x: 0 }}
             className="flex gap-2 sm:gap-4 items-center"
           >
-            <div className="hidden sm:flex">
-              <ModeToggle />
-            </div>
             <Link href="/docs" className="hidden md:block">
               <Button variant="ghost">Docs</Button>
             </Link>
@@ -56,7 +52,7 @@ export default function HomePage() {
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Learn Anywhere, Anytime
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Offline-first collaborative learning platform that keeps education accessible
             even without internet connectivity
           </p>
@@ -83,8 +79,8 @@ export default function HomePage() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl font-bold mb-4">Why Choose EduSync?</h2>
-          <p className="text-gray-600 text-lg">
+          <h2 className="text-4xl font-bold mb-4 text-white">Why Choose EduSync?</h2>
+          <p className="text-gray-300 text-lg">
             Everything you need for modern collaborative learning
           </p>
         </motion.div>
@@ -97,13 +93,13 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+              className="bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
             >
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <feature.icon className="h-6 w-6 text-blue-600" />
+              <div className="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center mb-4">
+                <feature.icon className="h-6 w-6 text-blue-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-              <p className="text-gray-600">{feature.description}</p>
+              <h3 className="text-xl font-semibold mb-2 text-white">{feature.title}</h3>
+              <p className="text-gray-300">{feature.description}</p>
             </motion.div>
           ))}
         </div>
@@ -136,8 +132,8 @@ export default function HomePage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-4xl font-bold mb-6">Ready to Transform Learning?</h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <h2 className="text-4xl font-bold mb-6 text-white">Ready to Transform Learning?</h2>
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Join thousands of students and teachers using EduSync for seamless education
           </p>
           <Link href="/signup">
@@ -148,7 +144,6 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Footer */}
       {/* Footer */}
       <Footer />
     </div>

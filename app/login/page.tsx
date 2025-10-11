@@ -53,9 +53,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
       {/* Header */}
-      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-700">
+      <header className="border-b bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 border-gray-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo.png" alt="EduSync Logo" width={32} height={32} />
@@ -66,7 +66,7 @@ export default function LoginPage() {
 
           <div className="flex gap-4">
             <Link href="/docs" className="hidden sm:block">
-              <Button variant="ghost" className="dark:text-gray-300">Docs</Button>
+              <Button variant="ghost" className="text-gray-300">Docs</Button>
             </Link>
             <Link href="/signup">
               <Button>Sign Up</Button>
@@ -162,9 +162,9 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-gray-800 rounded-lg">
-          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Demo Accounts:</p>
-          <div className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
+        <div className="mt-6 p-4 bg-gray-800 rounded-lg">
+          <p className="text-sm font-semibold text-blue-100 mb-2">Demo Accounts:</p>
+          <div className="space-y-1 text-sm text-blue-200">
             <p>👨‍🏫 Teacher: teacher@demo.com / demo1234</p>
             <p>👨‍🎓 Student: student@demo.com / demo1234</p>
           </div>
