@@ -7,7 +7,7 @@ import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 
 export function ModeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -22,10 +22,10 @@ export function ModeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+      onClick={() => setTheme(resolvedTheme === "light" ? "dark" : "light")}
+      title={resolvedTheme === "light" ? "Switch to dark mode" : "Switch to light mode"}
     >
-      {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+      {resolvedTheme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
       <span className="sr-only">Toggle theme</span>
     </Button>
   )
