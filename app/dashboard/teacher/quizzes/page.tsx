@@ -160,26 +160,26 @@ export default function TeacherQuizzesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
-          <p className="text-gray-600">Loading quizzes...</p>
+          <p className="text-gray-400">Loading quizzes...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">Quiz Manager</h1>
-            <p className="text-gray-600 mt-2">Create and manage quizzes for your students</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white">Quiz Manager</h1>
+            <p className="text-gray-400 mt-2">Create and manage quizzes for your students</p>
           </div>
           <Button
             onClick={() => setCreating(!creating)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
           >
             <Plus className="w-5 h-5 mr-2" />
             {creating ? 'Cancel' : 'Create Quiz'}
@@ -243,7 +243,7 @@ export default function TeacherQuizzesPage() {
               {/* Questions */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900">Questions</h3>
+                  <h3 className="text-xl font-semibold text-white">Questions</h3>
                   <Button
                     onClick={addQuestion}
                     className="bg-green-600 hover:bg-green-700 text-white"
@@ -256,9 +256,9 @@ export default function TeacherQuizzesPage() {
 
                 <div className="space-y-6">
                   {questions.map((q, qIndex) => (
-                    <Card key={q.id} className="p-6 bg-gray-50">
+                    <Card key={q.id} className="p-6 bg-gray-700 border-gray-600">
                       <div className="flex items-start justify-between mb-4">
-                        <h4 className="text-lg font-semibold text-gray-900">
+                        <h4 className="text-lg font-semibold text-white">
                           Question {qIndex + 1}
                         </h4>
                         <Button
@@ -272,17 +272,17 @@ export default function TeacherQuizzesPage() {
 
                       <div className="space-y-4">
                         <div>
-                          <Label>Question Text *</Label>
+                          <Label className="text-gray-300">Question Text *</Label>
                           <Input
                             value={q.question}
                             onChange={(e) => updateQuestion(qIndex, 'question', e.target.value)}
                             placeholder="Enter your question..."
-                            className="mt-2"
+                            className="mt-2 bg-gray-600 border-gray-500 text-gray-100 placeholder-gray-400"
                           />
                         </div>
 
                         <div className="space-y-3">
-                          <Label>Answer Options *</Label>
+                          <Label className="text-gray-300">Answer Options *</Label>
                           {q.options.map((option, oIndex) => (
                             <div key={oIndex} className="flex items-center gap-3">
                               <input
@@ -296,11 +296,11 @@ export default function TeacherQuizzesPage() {
                                 value={option}
                                 onChange={(e) => updateOption(qIndex, oIndex, e.target.value)}
                                 placeholder={`Option ${oIndex + 1}`}
-                                className="flex-1"
+                                className="flex-1 bg-gray-600 border-gray-500 text-gray-100 placeholder-gray-400"
                               />
                             </div>
                           ))}
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-400">
                             Select the radio button for the correct answer
                           </p>
                         </div>
@@ -309,7 +309,7 @@ export default function TeacherQuizzesPage() {
                   ))}
 
                   {questions.length === 0 && (
-                    <p className="text-center text-gray-500 py-8">
+                    <p className="text-center text-gray-400 py-8">
                       No questions added yet. Click "Add Question" to get started.
                     </p>
                   )}
@@ -317,17 +317,17 @@ export default function TeacherQuizzesPage() {
               </div>
 
               {/* Save Button */}
-              <div className="flex justify-end gap-4 pt-6 border-t">
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-700">
                 <Button
                   onClick={() => setCreating(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800"
+                  className="bg-gray-600 hover:bg-gray-700 text-white w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={saveQuiz}
                   disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
                 >
                   <Save className="w-5 h-5 mr-2" />
                   {saving ? 'Saving...' : 'Save Quiz'}
@@ -339,33 +339,33 @@ export default function TeacherQuizzesPage() {
 
         {/* Existing Quizzes */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Quizzes</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h2 className="text-2xl font-bold text-white mb-6">Your Quizzes</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {quizzes.map((quiz) => {
               const questionCount = quiz.questions 
                 ? JSON.parse(quiz.questions as any).length 
                 : 0;
 
               return (
-                <Card key={quiz.$id} className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+                <Card key={quiz.$id} className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg hover:shadow-xl transition-shadow">
                   <div className="flex items-start justify-between mb-4">
-                    <BookOpen className="w-8 h-8 text-blue-600" />
+                    <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
                     <Badge className="bg-blue-100 text-blue-800">
                       {questionCount} Questions
                     </Badge>
                   </div>
 
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{quiz.name}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{quiz.name}</h3>
+                  <p className="text-gray-400 mb-4 line-clamp-2">
                     {quiz.description || 'No description'}
                   </p>
 
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
                       <Clock className="w-4 h-4" />
                       <span>{quiz.timeLimit} minutes</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
                       <Award className="w-4 h-4" />
                       <span>{quiz.maxAttempts} attempts allowed</span>
                     </div>
@@ -387,9 +387,9 @@ export default function TeacherQuizzesPage() {
 
             {quizzes.length === 0 && !creating && (
               <div className="col-span-full text-center py-12">
-                <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No quizzes yet</h3>
-                <p className="text-gray-600 mb-6">Create your first quiz to get started</p>
+                <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No quizzes yet</h3>
+                <p className="text-gray-400 mb-6">Create your first quiz to get started</p>
                 <Button
                   onClick={() => setCreating(true)}
                   className="bg-blue-600 hover:bg-blue-700 text-white"

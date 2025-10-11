@@ -138,22 +138,22 @@ export default function TeacherAssignmentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
-          <p className="text-gray-600">Loading assignments...</p>
+          <p className="text-gray-400">Loading assignments...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">Assignments</h1>
-            <p className="text-gray-600 mt-2">Create and manage assignments for your students</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white">Assignments</h1>
+            <p className="text-gray-400 mt-2">Create and manage assignments for your students</p>
           </div>
           <Button
             onClick={() => setCreating(!creating)}
@@ -166,55 +166,55 @@ export default function TeacherAssignmentsPage() {
 
         {/* Create Assignment Form */}
         {creating && (
-          <Card className="p-8 bg-white shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Assignment</h2>
+          <Card className="p-6 sm:p-8 bg-gray-800 border-gray-700 shadow-lg">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">Create New Assignment</h2>
             
             <div className="space-y-6">
               <div>
-                <Label htmlFor="title">Assignment Title *</Label>
+                <Label htmlFor="title" className="text-gray-300">Assignment Title *</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., Chapter 1 Essay"
-                  className="mt-2"
+                  className="mt-2 bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500"
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="description" className="text-gray-300">Description *</Label>
                 <textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Detailed instructions for the assignment..."
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-2 w-full px-4 py-2 border border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={6}
                 />
               </div>
 
               <div>
-                <Label htmlFor="dueDate">Due Date *</Label>
+                <Label htmlFor="dueDate" className="text-gray-300">Due Date *</Label>
                 <Input
                   id="dueDate"
                   type="datetime-local"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="mt-2"
+                  className="mt-2 bg-gray-700 border-gray-600 text-gray-100"
                 />
               </div>
 
-              <div className="flex justify-end gap-4 pt-6 border-t">
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-700">
                 <Button
                   onClick={() => setCreating(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800"
+                  className="bg-gray-600 hover:bg-gray-700 text-white w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={createAssignment}
                   disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
                 >
                   <Save className="w-5 h-5 mr-2" />
                   {saving ? 'Creating...' : 'Create Assignment'}
@@ -226,34 +226,34 @@ export default function TeacherAssignmentsPage() {
 
         {/* Assignments Grid */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">All Assignments</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">All Assignments</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {assignments.map((assignment) => {
               const overdue = isOverdue(assignment.dueDate);
               
               return (
-                <Card key={assignment.$id} className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+                <Card key={assignment.$id} className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg hover:shadow-xl transition-shadow">
                   <div className="flex items-start justify-between mb-4">
-                    <BookOpen className="w-8 h-8 text-blue-600" />
+                    <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400" />
                     <Badge className={getStatusColor(assignment.status)}>
                       {assignment.status}
                     </Badge>
                   </div>
 
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{assignment.title}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-3">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{assignment.title}</h3>
+                  <p className="text-gray-400 text-sm sm:text-base mb-4 line-clamp-3">
                     {assignment.description}
                   </p>
 
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-gray-600" />
-                      <span className={overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className={overdue ? 'text-red-400 font-semibold' : 'text-gray-400'}>
                         Due: {new Date(assignment.dueDate).toLocaleDateString()}
                       </span>
                     </div>
                     {overdue && (
-                      <div className="flex items-center gap-2 text-sm text-red-600">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-red-400">
                         <AlertCircle className="w-4 h-4" />
                         <span className="font-semibold">Overdue</span>
                       </div>
@@ -263,7 +263,7 @@ export default function TeacherAssignmentsPage() {
                   <div className="flex gap-2">
                     <Button
                       onClick={() => deleteAssignment(assignment.$id)}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm sm:text-base"
                       size="sm"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
@@ -276,9 +276,9 @@ export default function TeacherAssignmentsPage() {
 
             {assignments.length === 0 && !creating && (
               <div className="col-span-full text-center py-12">
-                <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No assignments yet</h3>
-                <p className="text-gray-600 mb-6">Create your first assignment to get started</p>
+                <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-500 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No assignments yet</h3>
+                <p className="text-gray-400 text-sm sm:text-base mb-6">Create your first assignment to get started</p>
                 <Button
                   onClick={() => setCreating(true)}
                   className="bg-blue-600 hover:bg-blue-700 text-white"

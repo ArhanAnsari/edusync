@@ -16,6 +16,8 @@ interface Submission {
   submissionId: string;
   assignmentId: string;
   userId: string;
+  userName?: string; // Add optional userName field
+  userEmail?: string; // Add optional userEmail field
   content: string;
   submittedAt: string;
   grade?: number;
@@ -76,8 +78,25 @@ export default function TeacherGradingPage() {
     return assignments.find((a) => a.$id === assignmentId)?.title || 'Unknown Assignment';
   };
 
-  const getUserName = (userId: string) => {
-    return users.find((u) => u.$id === userId)?.name || 'Unknown User';
+  const getUserName = (submission: Submission) => {
+    // First, try to get name from the submission itself (new submissions)
+    if (submission.userName) {
+      return submission.userName;
+    }
+    
+    // Fallback to looking up in users collection (old submissions)
+    const userId = submission.userId;
+    if (!userId) {
+      return 'Unknown User';
+    }
+    
+    const foundUser = users.find((u) => u.$id === userId);
+    if (foundUser?.name) {
+      return foundUser.name;
+    }
+    
+    // Last resort: show truncated user ID
+    return `User ${userId.substring(0, 8)}...`;
   };
 
   const openGrading = (submission: Submission) => {
@@ -163,69 +182,69 @@ export default function TeacherGradingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
-          <p className="text-gray-600">Loading submissions...</p>
+          <p className="text-gray-400">Loading submissions...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Grading Center</h1>
-          <p className="text-gray-600 mt-2">Review and grade student submissions</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white">Grading Center</h1>
+          <p className="text-gray-400 mt-2">Review and grade student submissions</p>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="p-6 bg-white shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
+          <Card className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <FileText className="w-6 h-6 text-blue-600" />
+              <div className="p-3 bg-blue-600/20 rounded-lg">
+                <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Total Submissions</p>
-                <p className="text-2xl font-bold text-gray-900">{totalSubmissions}</p>
+                <p className="text-sm text-gray-400">Total</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{totalSubmissions}</p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-white shadow-lg">
+          <Card className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+              <div className="p-3 bg-green-600/20 rounded-lg">
+                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Graded</p>
-                <p className="text-2xl font-bold text-gray-900">{gradedSubmissions}</p>
+                <p className="text-sm text-gray-400">Graded</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{gradedSubmissions}</p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-white shadow-lg">
+          <Card className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <XCircle className="w-6 h-6 text-yellow-600" />
+              <div className="p-3 bg-yellow-600/20 rounded-lg">
+                <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-gray-900">{pendingSubmissions}</p>
+                <p className="text-sm text-gray-400">Pending</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{pendingSubmissions}</p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-white shadow-lg">
+          <Card className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
+              <div className="p-3 bg-purple-600/20 rounded-lg">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Average Grade</p>
-                <p className="text-2xl font-bold text-gray-900">{averageGrade}</p>
+                <p className="text-sm text-gray-400">Avg Grade</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{averageGrade}</p>
               </div>
             </div>
           </Card>
@@ -233,40 +252,40 @@ export default function TeacherGradingPage() {
 
         {/* Grading Modal */}
         {gradingSubmission && (
-          <Card className="p-8 bg-white shadow-lg border-2 border-blue-500">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Grade Submission</h2>
+          <Card className="p-6 sm:p-8 bg-gray-800 border-2 border-blue-500 shadow-lg">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">Grade Submission</h2>
 
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-700 rounded-lg border border-gray-600">
                 <div>
-                  <p className="text-sm text-gray-600">Student</p>
-                  <p className="font-semibold text-gray-900">
-                    {getUserName(gradingSubmission.userId)}
+                  <p className="text-sm text-gray-400">Student</p>
+                  <p className="font-semibold text-white">
+                    {getUserName(gradingSubmission)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Assignment</p>
-                  <p className="font-semibold text-gray-900">
+                  <p className="text-sm text-gray-400">Assignment</p>
+                  <p className="font-semibold text-white">
                     {getAssignmentTitle(gradingSubmission.assignmentId)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Submitted</p>
-                  <p className="font-semibold text-gray-900">
+                  <p className="text-sm text-gray-400">Submitted</p>
+                  <p className="font-semibold text-white">
                     {new Date(gradingSubmission.submittedAt).toLocaleString()}
                   </p>
                 </div>
               </div>
 
               <div>
-                <Label>Submission Content</Label>
-                <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-300 max-h-64 overflow-y-auto">
-                  <p className="text-gray-900 whitespace-pre-wrap">{gradingSubmission.content}</p>
+                <Label className="text-gray-300">Submission Content</Label>
+                <div className="mt-2 p-4 bg-gray-700 rounded-lg border border-gray-600 max-h-64 overflow-y-auto">
+                  <p className="text-gray-100 whitespace-pre-wrap">{gradingSubmission.content}</p>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="grade">Grade (0-100) *</Label>
+                <Label htmlFor="grade" className="text-gray-300">Grade (0-100) *</Label>
                 <Input
                   id="grade"
                   type="number"
@@ -275,33 +294,33 @@ export default function TeacherGradingPage() {
                   value={grade}
                   onChange={(e) => setGrade(e.target.value)}
                   placeholder="Enter grade"
-                  className="mt-2"
+                  className="mt-2 bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500"
                 />
               </div>
 
               <div>
-                <Label htmlFor="feedback">Feedback</Label>
+                <Label htmlFor="feedback" className="text-gray-300">Feedback</Label>
                 <textarea
                   id="feedback"
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
                   placeholder="Provide feedback to the student..."
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-2 w-full px-4 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-700 text-gray-100 placeholder-gray-500"
                   rows={4}
                 />
               </div>
 
-              <div className="flex justify-end gap-4 pt-6 border-t">
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-700">
                 <Button
                   onClick={() => setGradingSubmission(null)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800"
+                  className="bg-gray-600 hover:bg-gray-700 text-white w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={submitGrade}
                   disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
                 >
                   <Award className="w-5 h-5 mr-2" />
                   {saving ? 'Saving...' : 'Submit Grade'}
@@ -313,19 +332,19 @@ export default function TeacherGradingPage() {
 
         {/* Submissions List */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Submissions</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">Recent Submissions</h2>
           <div className="space-y-4">
             {submissions.map((submission) => (
-              <Card key={submission.$id} className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-2">
-                      <h3 className="text-lg font-bold text-gray-900">
-                        {getUserName(submission.userId)}
+              <Card key={submission.$id} className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex-1 w-full">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-2">
+                      <h3 className="text-lg font-bold text-white">
+                        {getUserName(submission)}
                       </h3>
                       {getStatusBadge(submission)}
                     </div>
-                    <p className="text-gray-600 mb-2">
+                    <p className="text-gray-400 mb-2">
                       Assignment: {getAssignmentTitle(submission.assignmentId)}
                     </p>
                     <p className="text-sm text-gray-500">
@@ -344,7 +363,7 @@ export default function TeacherGradingPage() {
                       submission.grade !== undefined
                         ? 'bg-gray-600 hover:bg-gray-700'
                         : 'bg-blue-600 hover:bg-blue-700'
-                    } text-white`}
+                    } text-white w-full sm:w-auto`}
                   >
                     <FileText className="w-5 h-5 mr-2" />
                     {submission.grade !== undefined ? 'Review' : 'Grade'}
@@ -355,9 +374,9 @@ export default function TeacherGradingPage() {
 
             {submissions.length === 0 && (
               <div className="text-center py-12">
-                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No submissions yet</h3>
-                <p className="text-gray-600">Submissions will appear here once students submit their work</p>
+                <Users className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No submissions yet</h3>
+                <p className="text-gray-400">Submissions will appear here once students submit their work</p>
               </div>
             )}
           </div>

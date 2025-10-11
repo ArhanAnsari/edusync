@@ -131,21 +131,21 @@ export default function StudentMaterialsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
-          <p className="text-gray-600">Loading materials...</p>
+          <p className="text-gray-400">Loading materials...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-4xl font-bold text-gray-900">Learning Materials</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white">Learning Materials</h1>
             <div className="flex items-center gap-2">
               {isOnline ? (
                 <Badge className="bg-green-100 text-green-800">
@@ -160,11 +160,11 @@ export default function StudentMaterialsPage() {
               )}
             </div>
           </div>
-          <p className="text-gray-600">Access study materials shared by your teachers</p>
+          <p className="text-gray-400">Access study materials shared by your teachers</p>
         </div>
 
         {/* Search and Filter */}
-        <Card className="p-6 bg-white shadow-lg">
+        <Card className="p-6 bg-gray-800 border-gray-700 shadow-lg">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -172,13 +172,13 @@ export default function StudentMaterialsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search materials..."
-                className="pl-10"
+                className="pl-10 bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500"
               />
             </div>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Types</option>
               <option value="pdf">PDF Documents</option>
@@ -192,12 +192,12 @@ export default function StudentMaterialsPage() {
 
         {/* Materials Grid */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          <h2 className="text-2xl font-bold text-white mb-6">
             Available Materials ({filteredMaterials.length})
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredMaterials.map((material) => (
-              <Card key={material.$id} className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <Card key={material.$id} className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg hover:shadow-xl transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   {getFileIcon(material.type)}
                   <Badge className={getTypeColor(material.type)}>
@@ -205,8 +205,8 @@ export default function StudentMaterialsPage() {
                   </Badge>
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{material.title}</h3>
-                <p className="text-gray-600 mb-4 line-clamp-3">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{material.title}</h3>
+                <p className="text-gray-400 mb-4 line-clamp-3">
                   {material.description || 'No description'}
                 </p>
 
@@ -227,13 +227,13 @@ export default function StudentMaterialsPage() {
 
             {filteredMaterials.length === 0 && (
               <div className="col-span-full text-center py-12">
-                <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
                   {searchQuery || filterType !== 'all'
                     ? 'No materials found'
                     : 'No materials available'}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-400">
                   {searchQuery || filterType !== 'all'
                     ? 'Try adjusting your search or filter'
                     : 'Check back later for new materials from your teachers'}

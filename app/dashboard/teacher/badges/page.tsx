@@ -81,46 +81,53 @@ export default function BadgeAwardPage() {
         config.collections.badges,
         ID.unique(),
         {
+          badgeId: ID.unique(),
           userId: selectedStudent.$id,
+          name: selectedBadge.name,
           badgeName: selectedBadge.name,
+          description: selectedBadge.description,
           badgeDescription: selectedBadge.description,
+          badgeType: selectedBadge.name.toLowerCase().replace(/\s+/g, '_'),
           awardedBy: user.$id,
           awardedAt: new Date().toISOString(),
+          $createdAt: new Date().toISOString(),
+          $updatedAt: new Date().toISOString(),
         },
         [
-          Permission.read(Role.user(selectedStudent.$id)),
+          Permission.read(Role.any()),
           Permission.update(Role.user(user.$id)),
           Permission.delete(Role.user(user.$id)),
         ]
       );
 
-      setMessage(`✅ Badge "${selectedBadge.name}" awarded to ${selectedStudent.name}!`);
+      setMessage(`✅ Badge "${selectedBadge.name}" awarded to ${selectedStudent.name || 'student'}!`);
       setSelectedStudent(null);
       setSelectedBadge(null);
     } catch (error: any) {
-      setMessage(`❌ Failed to award badge: ${error.message}`);
+      console.error('Error awarding badge:', error);
+      setMessage(`❌ Failed to award badge: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase())
+    student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
       {/* Header */}
-      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-700">
+      <header className="border-b bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 border-gray-700">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/dashboard/teacher" className="flex items-center gap-2">
@@ -145,10 +152,10 @@ export default function BadgeAwardPage() {
         >
           {/* Title */}
           <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
               Award Student Badges
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-400">
               Recognize student achievements with badges
             </p>
           </div>
@@ -159,7 +166,7 @@ export default function BadgeAwardPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className={`p-4 rounded-lg text-center font-semibold ${
-                message.includes('✅') ? 'bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100' : 'bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100'
+                message.includes('✅') ? 'bg-green-600/20 text-green-400 border border-green-500/30' : 'bg-red-600/20 text-red-400 border border-red-500/30'
               }`}
             >
               {message}
@@ -167,9 +174,9 @@ export default function BadgeAwardPage() {
           )}
 
           {/* Available Badges */}
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="dark:text-gray-100">Available Badges</CardTitle>
+              <CardTitle className="text-white">Available Badges</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -182,45 +189,45 @@ export default function BadgeAwardPage() {
                       whileTap={{ scale: 0.95 }}
                       className={`p-4 rounded-lg cursor-pointer transition-all ${
                         selectedBadge?.name === badge.name
-                          ? 'ring-2 ring-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                          ? 'ring-2 ring-blue-500 bg-blue-600/20'
+                          : 'hover:bg-gray-700'
                       }`}
                       onClick={() => setSelectedBadge(badge)}
                     >
                       <div className={`w-12 h-12 rounded-full ${badge.color} flex items-center justify-center mx-auto mb-2`}>
                         <Icon className="h-6 w-6 text-white" />
                       </div>
-                      <p className="text-xs font-semibold text-center dark:text-gray-200">{badge.name}</p>
+                      <p className="text-xs font-semibold text-center text-gray-200">{badge.name}</p>
                       {selectedBadge?.name === badge.name && (
-                        <Check className="h-4 w-4 text-blue-600 dark:text-blue-400 mx-auto mt-2" />
+                        <Check className="h-4 w-4 text-blue-400 mx-auto mt-2" />
                       )}
                     </motion.div>
                   );
                 })}
               </div>
               {selectedBadge && (
-                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{selectedBadge.name}</p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">{selectedBadge.description}</p>
+                <div className="mt-4 p-4 bg-blue-600/20 border border-blue-500/30 rounded-lg">
+                  <p className="text-sm font-semibold text-blue-400">{selectedBadge.name}</p>
+                  <p className="text-xs text-blue-300">{selectedBadge.description}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Student Selection */}
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle className="dark:text-gray-100">Select Student</CardTitle>
+              <CardTitle className="text-white">Select Student</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="search" className="dark:text-gray-200">Search Students</Label>
+                <Label htmlFor="search" className="text-gray-300">Search Students</Label>
                 <Input
                   id="search"
                   placeholder="Search by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  className="bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500"
                 />
               </div>
 
@@ -232,21 +239,21 @@ export default function BadgeAwardPage() {
                     whileTap={{ scale: 0.98 }}
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                       selectedStudent?.$id === student.$id
-                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
+                        ? 'border-blue-500 bg-blue-600/20'
+                        : 'border-gray-600 hover:border-blue-500'
                     }`}
                     onClick={() => setSelectedStudent(student)}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                        {student.name.charAt(0).toUpperCase()}
+                        {student.name?.charAt(0).toUpperCase() || '?'}
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-sm dark:text-gray-100">{student.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{student.email}</p>
+                        <p className="font-semibold text-sm text-white">{student.name || 'Unknown'}</p>
+                        <p className="text-xs text-gray-400 truncate">{student.email || 'No email'}</p>
                       </div>
                       {selectedStudent?.$id === student.$id && (
-                        <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <Check className="h-5 w-5 text-blue-400" />
                       )}
                     </div>
                   </motion.div>
@@ -254,7 +261,7 @@ export default function BadgeAwardPage() {
               </div>
 
               {filteredStudents.length === 0 && (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">No students found</p>
+                <p className="text-center text-gray-400 py-8">No students found</p>
               )}
             </CardContent>
           </Card>

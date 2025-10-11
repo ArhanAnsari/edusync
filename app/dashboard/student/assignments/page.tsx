@@ -90,6 +90,8 @@ export default function StudentAssignmentsPage() {
           submissionId,
           assignmentId: activeAssignment.assignmentId,
           userId: user.$id,
+          userName: user.name, // Add user name to submission
+          userEmail: user.email, // Add user email to submission
           content: submissionContent,
           submittedAt: new Date().toISOString(),
         },
@@ -155,53 +157,53 @@ export default function StudentAssignmentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
-          <p className="text-gray-600">Loading assignments...</p>
+          <p className="text-gray-400">Loading assignments...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Assignments</h1>
-          <p className="text-gray-600 mt-2">View and submit your assignments</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white">Assignments</h1>
+          <p className="text-gray-400 mt-2">View and submit your assignments</p>
         </div>
 
         {/* Submit Modal */}
         {activeAssignment && (
-          <Card className="p-6 sm:p-8 bg-white shadow-lg border-2 border-blue-500">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Submit Assignment</h2>
+          <Card className="p-6 sm:p-8 bg-gray-800 border-gray-700 shadow-lg border-2 border-blue-500">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">Submit Assignment</h2>
 
             <div className="space-y-4 sm:space-y-6">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-2">{activeAssignment.title}</h3>
-                <p className="text-sm text-gray-600 mb-2">{activeAssignment.description}</p>
+              <div className="p-4 bg-gray-700 rounded-lg">
+                <h3 className="font-semibold text-white mb-2">{activeAssignment.title}</h3>
+                <p className="text-sm text-gray-400 mb-2">{activeAssignment.description}</p>
                 <p className="text-sm text-gray-500">
                   Due: {new Date(activeAssignment.dueDate).toLocaleString()}
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="content">Your Submission *</Label>
+                <Label htmlFor="content" className="text-gray-300">Your Submission *</Label>
                 <textarea
                   id="content"
                   value={submissionContent}
                   onChange={(e) => setSubmissionContent(e.target.value)}
                   placeholder="Enter your assignment content here..."
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-2 w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={10}
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t">
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-700">
                 <Button
                   onClick={() => setActiveAssignment(null)}
-                  className="w-full sm:w-auto bg-gray-300 hover:bg-gray-400 text-gray-800"
+                  className="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white"
                 >
                   Cancel
                 </Button>
@@ -225,21 +227,21 @@ export default function StudentAssignmentsPage() {
             const overdue = isOverdue(assignment.dueDate);
 
             return (
-              <Card key={assignment.$id} className="p-4 sm:p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <Card key={assignment.$id} className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg hover:shadow-xl transition-shadow">
                 <div className="flex items-start justify-between mb-4">
-                  <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+                  <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
                   {getStatusBadge(assignment)}
                 </div>
 
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">{assignment.title}</h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 line-clamp-3">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{assignment.title}</h3>
+                <p className="text-sm sm:text-base text-gray-400 mb-4 line-clamp-3">
                   {assignment.description}
                 </p>
 
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="w-4 h-4 text-gray-600" />
-                    <span className={overdue && !submission ? 'text-red-600 font-semibold' : 'text-gray-600'}>
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className={overdue && !submission ? 'text-red-400 font-semibold' : 'text-gray-400'}>
                       Due: {new Date(assignment.dueDate).toLocaleDateString()}
                     </span>
                   </div>
@@ -247,18 +249,18 @@ export default function StudentAssignmentsPage() {
 
                 {submission ? (
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-400">
                       Submitted: {new Date(submission.submittedAt).toLocaleDateString()}
                     </p>
                     {submission.grade !== undefined && (
                       <div>
-                        <p className="text-lg font-bold text-blue-600">
+                        <p className="text-lg font-bold text-blue-400">
                           Grade: {submission.grade}/100
                         </p>
                         {submission.feedback && (
-                          <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-                            <p className="text-sm font-semibold text-gray-900 mb-1">Feedback:</p>
-                            <p className="text-sm text-gray-700">{submission.feedback}</p>
+                          <div className="mt-2 p-3 bg-blue-600/20 border border-blue-500/30 rounded-lg">
+                            <p className="text-sm font-semibold text-blue-400 mb-1">Feedback:</p>
+                            <p className="text-sm text-gray-300">{submission.feedback}</p>
                           </div>
                         )}
                       </div>
@@ -270,7 +272,7 @@ export default function StudentAssignmentsPage() {
                     disabled={overdue}
                     className={`w-full ${
                       overdue
-                        ? 'bg-gray-400 cursor-not-allowed'
+                        ? 'bg-gray-600 cursor-not-allowed'
                         : 'bg-blue-600 hover:bg-blue-700'
                     } text-white`}
                   >
@@ -285,15 +287,12 @@ export default function StudentAssignmentsPage() {
           {assignments.length === 0 && (
             <div className="col-span-full text-center py-12">
               <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No assignments yet</h3>
-              <p className="text-sm sm:text-base text-gray-600">Check back later for new assignments from your teachers</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No assignments yet</h3>
+              <p className="text-sm sm:text-base text-gray-400">Check back later for new assignments from your teachers</p>
             </div>
           )}
         </div>
       </div>
-
-      {/* Footer */}
-      <Footer role="student" />
     </div>
   );
 }

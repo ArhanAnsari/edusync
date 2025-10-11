@@ -173,26 +173,26 @@ export default function TeacherMaterialsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
-          <p className="text-gray-600">Loading materials...</p>
+          <p className="text-gray-400">Loading materials...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">Learning Materials</h1>
-            <p className="text-gray-600 mt-2">Upload and manage study materials for your students</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white">Study Materials</h1>
+            <p className="text-gray-400 mt-2">Upload and manage learning resources</p>
           </div>
           <Button
             onClick={() => setShowUploadForm(!showUploadForm)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
           >
             <Upload className="w-5 h-5 mr-2" />
             {showUploadForm ? 'Cancel' : 'Upload Material'}
@@ -201,40 +201,40 @@ export default function TeacherMaterialsPage() {
 
         {/* Upload Form */}
         {showUploadForm && (
-          <Card className="p-8 bg-white shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Upload New Material</h2>
+          <Card className="p-6 sm:p-8 bg-gray-800 border-gray-700 shadow-lg">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">Upload New Material</h2>
             
             <div className="space-y-6">
               <div>
-                <Label htmlFor="title">Title *</Label>
+                <Label htmlFor="title" className="text-gray-300">Title *</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., Chapter 1 Notes"
-                  className="mt-2"
+                  className="mt-2 bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500"
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className="text-gray-300">Description</Label>
                 <textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Brief description of the material..."
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-2 w-full px-4 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-700 text-gray-100 placeholder-gray-500"
                   rows={3}
                 />
               </div>
 
               <div>
-                <Label htmlFor="type">Material Type *</Label>
+                <Label htmlFor="type" className="text-gray-300">Material Type *</Label>
                 <select
                   id="type"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-2 w-full px-4 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-700 text-gray-100"
                 >
                   <option value="pdf">PDF Document</option>
                   <option value="video">Video</option>
@@ -245,31 +245,31 @@ export default function TeacherMaterialsPage() {
               </div>
 
               <div>
-                <Label htmlFor="file">File *</Label>
+                <Label htmlFor="file" className="text-gray-300">File *</Label>
                 <input
                   id="file"
                   type="file"
                   onChange={handleFileChange}
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-2 w-full px-4 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-700 text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                 />
                 {file && (
-                  <p className="text-sm text-gray-600 mt-2">
+                  <p className="text-sm text-gray-400 mt-2">
                     Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
                   </p>
                 )}
               </div>
 
-              <div className="flex justify-end gap-4 pt-6 border-t">
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-700">
                 <Button
                   onClick={() => setShowUploadForm(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800"
+                  className="bg-gray-600 hover:bg-gray-700 text-white w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={uploadMaterial}
                   disabled={uploading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
                 >
                   <Upload className="w-5 h-5 mr-2" />
                   {uploading ? 'Uploading...' : 'Upload Material'}
@@ -281,10 +281,10 @@ export default function TeacherMaterialsPage() {
 
         {/* Materials Grid */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Uploaded Materials</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">Uploaded Materials</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {materials.map((material) => (
-              <Card key={material.$id} className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <Card key={material.$id} className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg hover:shadow-xl transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   {getFileIcon(material.type)}
                   <Badge className={getTypeColor(material.type)}>
@@ -292,8 +292,8 @@ export default function TeacherMaterialsPage() {
                   </Badge>
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{material.title}</h3>
-                <p className="text-gray-600 mb-4 line-clamp-2">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{material.title}</h3>
+                <p className="text-gray-400 mb-4 line-clamp-2">
                   {material.description || 'No description'}
                 </p>
 
@@ -301,7 +301,7 @@ export default function TeacherMaterialsPage() {
                   Uploaded: {new Date(material.$createdAt).toLocaleDateString()}
                 </p>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   {material.url && (
                     <Button
                       onClick={() => window.open(material.url, '_blank')}
@@ -326,12 +326,12 @@ export default function TeacherMaterialsPage() {
 
             {materials.length === 0 && !showUploadForm && (
               <div className="col-span-full text-center py-12">
-                <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No materials yet</h3>
-                <p className="text-gray-600 mb-6">Upload your first material to get started</p>
+                <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No materials yet</h3>
+                <p className="text-gray-400 mb-6">Upload your first material to get started</p>
                 <Button
                   onClick={() => setShowUploadForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
                 >
                   <Upload className="w-5 h-5 mr-2" />
                   Upload Material

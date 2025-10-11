@@ -28,11 +28,17 @@ export default function Footer({ role = 'guest' }: FooterProps) {
     setMessage('');
 
     try {
-      // Simulate API call - Replace with your actual newsletter API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // TODO: Add your newsletter API integration here
-      // Example: await fetch('/api/newsletter', { method: 'POST', body: JSON.stringify({ email }) })
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to subscribe');
+      }
       
       setSubscribeStatus('success');
       setMessage('Thanks for subscribing! Check your email.');
@@ -42,9 +48,9 @@ export default function Footer({ role = 'guest' }: FooterProps) {
         setSubscribeStatus('idle');
         setMessage('');
       }, 3000);
-    } catch (error) {
+    } catch (error: any) {
       setSubscribeStatus('error');
-      setMessage('Something went wrong. Please try again.');
+      setMessage(error.message || 'Something went wrong. Please try again.');
       
       setTimeout(() => {
         setSubscribeStatus('idle');

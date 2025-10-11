@@ -11,7 +11,6 @@ import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileChec
 import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
-import { ModeToggle } from '@/components/mode-toggle';
 
 export default function TeacherDashboard() {
   const { user, logout, loading } = useAuth();
@@ -98,9 +97,9 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Header */}
-      <header className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 dark:border-gray-700">
+      <header className="border-b bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 border-gray-700">
         <div className="container mx-auto px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-4">
@@ -154,11 +153,6 @@ export default function TeacherDashboard() {
                   <p className="text-sm font-medium dark:text-gray-100">{user?.name || 'Teacher'}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.role || 'teacher'}</p>
                 </div>
-              </div>
-
-              {/* Theme Toggle */}
-              <div className="hidden sm:flex">
-                <ModeToggle />
               </div>
 
               <Button variant="ghost" size="icon" onClick={logout} className="hidden sm:flex">
