@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,22 +11,62 @@ export default function LiveChat() {
     { text: "Hi! How can I help you today?", sender: 'bot' }
   ]);
   const [inputMessage, setInputMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || sending) return;
 
-    // Add user message
-    setMessages(prev => [...prev, { text: inputMessage, sender: 'user' }]);
+    // Add user message immediately
+    const userMessage = inputMessage;
+    setMessages(prev => [...prev, { text: userMessage, sender: 'user' }]);
     setInputMessage('');
+    setSending(true);
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      // Call chat API
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          sessionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await response.json();
+
+      // Add bot response
       setMessages(prev => [...prev, { 
-        text: "Thanks for your message! Our team will get back to you shortly. For immediate assistance, please email arhanansari2009@gmail.com", 
+        text: data.response, 
         sender: 'bot' 
       }]);
-    }, 1000);
+    } catch (error) {
+      console.error('Chat error:', error);
+      // Fallback response
+      setMessages(prev => [...prev, { 
+        text: "Sorry, I'm having trouble connecting. Please email arhanansari2009@gmail.com for immediate assistance.", 
+        sender: 'bot' 
+      }]);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -35,8 +75,9 @@ export default function LiveChat() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all hover:scale-110"
+          className="fixed bottom-3 right-380 z-20 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all hover:scale-110"
           aria-label="Open chat"
+          title="Live Support"
         >
           <MessageCircle className="w-6 h-6" />
         </button>
@@ -44,7 +85,7 @@ export default function LiveChat() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-gray-800 rounded-lg shadow-2xl border border-gray-700 flex flex-col h-[500px] max-h-[calc(100vh-3rem)]">
+        <div className="fixed bottom-3 right-290 z-30 w-96 max-w-[calc(100vw-3rem)] bg-gray-800 rounded-lg shadow-2xl border border-gray-700 flex flex-col h-[500px] max-h-[calc(100vh-3rem)]">
           {/* Header */}
           <div className="bg-blue-600 p-4 rounded-t-lg flex items-center justify-between">
             <div className="flex items-center gap-2">

@@ -188,54 +188,54 @@ export default function TeacherQuizzesPage() {
 
         {/* Create Quiz Form */}
         {creating && (
-          <Card className="p-8 bg-white shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Quiz</h2>
+          <Card className="p-6 sm:p-8 bg-gray-800 border-gray-700 shadow-lg">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">Create New Quiz</h2>
             
             <div className="space-y-6">
               {/* Quiz Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="quizName">Quiz Name *</Label>
+                  <Label htmlFor="quizName" className="text-gray-300">Quiz Name *</Label>
                   <Input
                     id="quizName"
                     value={quizName}
                     onChange={(e) => setQuizName(e.target.value)}
                     placeholder="e.g., Chapter 1 Quiz"
-                    className="mt-2"
+                    className="mt-2 bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="timeLimit">Time Limit (minutes)</Label>
+                  <Label htmlFor="timeLimit" className="text-gray-300">Time Limit (minutes)</Label>
                   <Input
                     id="timeLimit"
                     type="number"
                     value={timeLimit}
                     onChange={(e) => setTimeLimit(parseInt(e.target.value))}
-                    className="mt-2"
+                    className="mt-2 bg-gray-700 border-gray-600 text-gray-100"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="maxAttempts">Max Attempts</Label>
+                  <Label htmlFor="maxAttempts" className="text-gray-300">Max Attempts</Label>
                   <Input
                     id="maxAttempts"
                     type="number"
                     value={maxAttempts}
                     onChange={(e) => setMaxAttempts(parseInt(e.target.value))}
-                    className="mt-2"
+                    className="mt-2 bg-gray-700 border-gray-600 text-gray-100"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className="text-gray-300">Description</Label>
                 <textarea
                   id="description"
                   value={quizDescription}
                   onChange={(e) => setQuizDescription(e.target.value)}
                   placeholder="Brief description of the quiz..."
-                  className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-2 w-full px-4 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-700 text-gray-100 placeholder-gray-500"
                   rows={3}
                 />
               </div>

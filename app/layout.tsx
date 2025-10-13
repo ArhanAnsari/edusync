@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import CookieConsent from "@/components/CookieConsent";
 import LiveChat from "@/components/LiveChat";
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -81,6 +82,7 @@ export default function RootLayout({
           {children}
           <CookieConsent />
           <LiveChat />
+          <ServiceWorkerRegistration />
         </Providers>
       </body>
     </html>

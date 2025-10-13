@@ -106,9 +106,13 @@ export default function StudentQuizzesPage() {
   const fetchAttempts = async () => {
     if (!user) return;
     try {
+      const { Query } = await import('appwrite');
       const response = await databases.listDocuments(
         config.databaseId,
-        config.collections.quizAttempts
+        config.collections.quizAttempts,
+        [
+          Query.equal('userId', user.$id) // CRITICAL FIX: Filter by current user only
+        ]
       );
       setAttempts(response.documents as unknown as QuizAttempt[]);
     } catch (error) {

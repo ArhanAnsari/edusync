@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
-import { Users, MessageSquare, Video, Share2 } from 'lucide-react';
+import { Users, MessageSquare, Video, Share2, FileEdit, Paintbrush, Monitor } from 'lucide-react';
 
 export default function CollaborationPage() {
   return (
@@ -50,7 +50,7 @@ export default function CollaborationPage() {
 
       {/* Features */}
       <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 gap-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <motion.div
               key={index}
@@ -58,11 +58,15 @@ export default function CollaborationPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="bg-gray-800 p-8 rounded-xl"
             >
-              <feature.icon className="w-12 h-12 text-blue-400 mb-4" />
-              <h3 className="text-2xl font-bold mb-4 text-white">{feature.title}</h3>
-              <p className="text-gray-300">{feature.description}</p>
+              <Link href={feature.link}>
+                <div className="bg-gray-800 p-8 rounded-xl hover:bg-gray-750 transition-all hover:scale-105 cursor-pointer h-full border border-gray-700 hover:border-blue-500">
+                  <feature.icon className="w-12 h-12 text-blue-400 mb-4" />
+                  <h3 className="text-2xl font-bold mb-4 text-white">{feature.title}</h3>
+                  <p className="text-gray-300 mb-4">{feature.description}</p>
+                  <span className="text-blue-400 font-medium">Try it now →</span>
+                </div>
+              </Link>
             </motion.div>
           ))}
         </div>
@@ -91,23 +95,39 @@ export default function CollaborationPage() {
 
 const features = [
   {
-    icon: Users,
-    title: 'Group Work',
-    description: 'Create study groups and work on assignments together with your classmates in real-time.',
-  },
-  {
-    icon: MessageSquare,
-    title: 'Live Chat',
-    description: 'Communicate instantly with teachers and peers through our built-in messaging system.',
+    icon: FileEdit,
+    title: 'Real-time Document Editing',
+    description: 'Collaborate on documents with your classmates and teachers in real-time with live cursors and instant sync.',
+    link: '/features/collaboration/documents',
   },
   {
     icon: Video,
-    title: 'Video Sessions',
-    description: 'Host or join virtual classrooms for live lectures and interactive discussions.',
+    title: 'Video Conferencing',
+    description: 'Host or join virtual classrooms for live lectures, interactive discussions, and face-to-face learning.',
+    link: '/features/collaboration/video',
   },
   {
-    icon: Share2,
-    title: 'Resource Sharing',
-    description: 'Share notes, materials, and resources seamlessly with your learning community.',
+    icon: MessageSquare,
+    title: 'Group Chat Rooms',
+    description: 'Communicate instantly with teachers and peers through organized channels and direct messaging.',
+    link: '/features/collaboration/chat',
+  },
+  {
+    icon: Paintbrush,
+    title: 'Interactive Whiteboard',
+    description: 'Draw, sketch, and brainstorm together on a shared digital whiteboard with real-time synchronization.',
+    link: '/features/collaboration/whiteboard',
+  },
+  {
+    icon: Monitor,
+    title: 'Screen Sharing',
+    description: 'Share your screen or specific application windows for presentations and demonstrations.',
+    link: '/features/collaboration/screen-sharing',
+  },
+  {
+    icon: Users,
+    title: 'Group Workspaces',
+    description: 'Create dedicated spaces for team projects with shared resources and collaborative tools.',
+    link: '/features/collaboration',
   },
 ];
