@@ -53,6 +53,7 @@ export default function StudentQuizzesPage() {
   const [answers, setAnswers] = useState<{ [key: string]: number }>({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.role !== 'student') {
@@ -75,7 +76,7 @@ export default function StudentQuizzesPage() {
 
   // Timer effect
   useEffect(() => {
-    if (activeQuiz && timeLeft > 0) {
+    if (activeQuiz && timeLeft > 0 && !submitting) {
       const timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -87,7 +88,7 @@ export default function StudentQuizzesPage() {
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [activeQuiz, timeLeft]);
+  }, [activeQuiz, timeLeft, submitting]);
 
   const fetchQuizzes = async () => {
     try {
@@ -126,6 +127,7 @@ export default function StudentQuizzesPage() {
     setQuestions(parsedQuestions);
     setTimeLeft(quiz.timeLimit * 60); // Convert to seconds
     setAnswers({});
+    setCurrentAttemptId(ID.unique()); // Generate attempt ID once at start
   };
 
   const selectAnswer = (questionId: string, optionIndex: number) => {
@@ -133,7 +135,7 @@ export default function StudentQuizzesPage() {
   };
 
   const submitQuiz = async (autoSubmit = false) => {
-    if (!user || !activeQuiz) return;
+    if (!user || !activeQuiz || submitting || !currentAttemptId) return; // Prevent duplicate submissions
 
     if (!autoSubmit && Object.keys(answers).length < questions.length) {
       if (!confirm('You haven\'t answered all questions. Submit anyway?')) {
@@ -153,7 +155,7 @@ export default function StudentQuizzesPage() {
       const score = Math.round((correctCount / questions.length) * 100);
 
       const attemptData = {
-        attemptId: ID.unique(),
+        attemptId: currentAttemptId, // Use the pre-generated attempt ID
         quizId: activeQuiz.quizId,
         userId: user.$id,
         answers: JSON.stringify(answers),
@@ -188,6 +190,7 @@ export default function StudentQuizzesPage() {
       setQuestions([]);
       setAnswers({});
       setTimeLeft(0);
+      setCurrentAttemptId(null); // Reset attempt ID
       fetchAttempts();
     } catch (error: any) {
       console.error('Error submitting quiz:', error);
