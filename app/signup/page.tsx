@@ -147,8 +147,8 @@ export default function SignupPage() {
                     onClick={() => setRole('student')}
                     className={`flex-1 p-4 border-2 rounded-lg transition-all ${
                       role === 'student'
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-blue-600 bg-blue-600/20 text-white'
+                        : 'border-gray-700 bg-gray-800 hover:border-gray-600 hover:bg-gray-700 text-gray-300'
                     }`}
                   >
                     <div className="text-2xl mb-1">👨‍🎓</div>
@@ -159,8 +159,8 @@ export default function SignupPage() {
                     onClick={() => setRole('teacher')}
                     className={`flex-1 p-4 border-2 rounded-lg transition-all ${
                       role === 'teacher'
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-blue-600 bg-blue-600/20 text-white'
+                        : 'border-gray-700 bg-gray-800 hover:border-gray-600 hover:bg-gray-700 text-gray-300'
                     }`}
                   >
                     <div className="text-2xl mb-1">👨‍🏫</div>

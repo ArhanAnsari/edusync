@@ -95,10 +95,10 @@ export async function getCurrentUser(): Promise<User> {
 
 export async function loginWithGitHub(): Promise<void> {
   try {
-    // Redirect to GitHub OAuth
+    // Redirect to GitHub OAuth with callback URL
     account.createOAuth2Session(
       OAuthProvider.Github,
-      `${window.location.origin}/dashboard/student`, // success URL
+      `${window.location.origin}/auth/callback/github`, // callback URL to handle role selection
       `${window.location.origin}/login`, // failure URL
     );
   } catch (error: any) {

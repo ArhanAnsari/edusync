@@ -109,8 +109,8 @@ export default function TeacherDashboard() {
                   EduSync
                 </span>
               </Link>
-              <span className="text-gray-400 hidden sm:inline">|</span>
-              <span className="text-gray-600 dark:text-gray-300 hidden sm:inline">Teacher Dashboard</span>
+              <span className="text-gray-400">|</span>
+              <span className="text-gray-300">Teacher Dashboard</span>
             </div>
 
             {/* Desktop Navigation */}
@@ -173,31 +173,31 @@ export default function TeacherDashboard() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="lg:hidden mt-4 pb-4 space-y-2 border-t pt-4">
+            <div className="lg:hidden mt-4 pb-4 space-y-2 border-t border-gray-700 pt-4">
               <Link
                 href="/dashboard/teacher/materials"
-                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Materials
               </Link>
               <Link
                 href="/dashboard/teacher/quizzes"
-                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Quizzes
               </Link>
               <Link
                 href="/dashboard/teacher/assignments"
-                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Assignments
               </Link>
               <Link
                 href="/dashboard/teacher/grading"
-                className="block px-4 py-2 text-gray-600 hover:bg-blue-50 rounded-lg"
+                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Grading
@@ -207,8 +207,8 @@ export default function TeacherDashboard() {
                   {user?.name?.charAt(0).toUpperCase() || 'T'}
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{user?.name || 'Teacher'}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role || 'teacher'}</p>
+                  <p className="text-sm font-medium text-gray-100">{user?.name || 'Teacher'}</p>
+                  <p className="text-xs text-gray-400 capitalize">{user?.role || 'teacher'}</p>
                 </div>
               </div>
               <Button
@@ -229,8 +229,8 @@ export default function TeacherDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Welcome back, {user?.name || 'Teacher'}!</h1>
-          <p className="text-gray-600 mb-6 sm:mb-8">Manage your classes and track student progress</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-white">Welcome back, {user?.name || 'Teacher'}!</h1>
+          <p className="text-sm sm:text-base text-gray-300 mb-6 sm:mb-8">Manage your classes and track student progress</p>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
