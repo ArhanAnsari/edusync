@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { databases, config, ID, Permission, Role } from '@/lib/appwrite';
@@ -54,6 +54,9 @@ export default function StudentQuizzesPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
+  
+  // Ref to prevent duplicate submissions (synchronous lock)
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     if (user?.role !== 'student') {
@@ -74,21 +77,26 @@ export default function StudentQuizzesPage() {
     };
   }, [user, router]);
 
-  // Timer effect
+  // Timer effect - simplified to prevent re-triggering
   useEffect(() => {
-    if (activeQuiz && timeLeft > 0 && !submitting) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            submitQuiz(true); // Auto-submit when time runs out
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
+    if (!activeQuiz || !timeLeft || submitting) {
+      return;
     }
-  }, [activeQuiz, timeLeft, submitting]);
+    
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        const newTime = prev - 1;
+        if (newTime <= 0) {
+          // Auto-submit when time runs out
+          submitQuiz(true);
+          return 0;
+        }
+        return newTime;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [activeQuiz, submitting]);
 
   const fetchQuizzes = async () => {
     try {
@@ -135,7 +143,15 @@ export default function StudentQuizzesPage() {
   };
 
   const submitQuiz = async (autoSubmit = false) => {
-    if (!user || !activeQuiz || submitting || !currentAttemptId) return; // Prevent duplicate submissions
+    // CRITICAL: Synchronous ref check - prevents duplicate submissions at entry point
+    if (isSubmittingRef.current) {
+      console.warn('Submission already in progress, blocking duplicate call');
+      return;
+    }
+
+    if (!user || !activeQuiz || !currentAttemptId || !questions.length) {
+      return;
+    }
 
     if (!autoSubmit && Object.keys(answers).length < questions.length) {
       if (!confirm('You haven\'t answered all questions. Submit anyway?')) {
@@ -143,7 +159,10 @@ export default function StudentQuizzesPage() {
       }
     }
 
+    // Set ref FIRST (synchronous) to block any concurrent calls
+    isSubmittingRef.current = true;
     setSubmitting(true);
+    
     try {
       // Calculate score
       let correctCount = 0;
@@ -178,6 +197,7 @@ export default function StudentQuizzesPage() {
             Permission.update(Role.user(user.$id)),
           ]
         );
+        console.log('Quiz submitted successfully:', attemptData.attemptId);
         alert(`Quiz submitted! Your score: ${score}%`);
       } else {
         // Save offline
@@ -190,12 +210,14 @@ export default function StudentQuizzesPage() {
       setQuestions([]);
       setAnswers({});
       setTimeLeft(0);
-      setCurrentAttemptId(null); // Reset attempt ID
+      setCurrentAttemptId(null);
       fetchAttempts();
     } catch (error: any) {
       console.error('Error submitting quiz:', error);
       alert('Failed to submit quiz: ' + error.message);
     } finally {
+      // Always reset both the ref and state
+      isSubmittingRef.current = false;
       setSubmitting(false);
     }
   };

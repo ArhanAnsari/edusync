@@ -15,6 +15,13 @@ function RoleSelectionContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [userData, setUserData] = useState<{ userId: string; name: string; email: string } | null>(null);
+  
+  // Form fields for OAuth users
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
 
   const userId = searchParams.get('userId');
   const name = searchParams.get('name') || 'User';
@@ -47,11 +54,15 @@ function RoleSelectionContent() {
           } catch (err: any) {
             // User doesn't exist, continue with role selection
             if (err.code === 404 || err.message?.includes('not found')) {
+              const nameParts = accountData.name.split(' ');
               setUserData({
                 userId: accountData.$id,
                 name: accountData.name,
                 email: accountData.email,
               });
+              // Pre-fill name fields
+              setFirstName(nameParts[0] || '');
+              setLastName(nameParts.slice(1).join(' ') || '');
             } else {
               throw err;
             }
@@ -70,7 +81,25 @@ function RoleSelectionContent() {
     };
 
     initUser();
-  }, [userId, name, email, fromOAuth, router]);
+  }, [router]);
+
+  const validatePassword = (pwd: string): string[] => {
+    const errors = [];
+    if (pwd.length < 8) errors.push('At least 8 characters');
+    if (!/[A-Z]/.test(pwd)) errors.push('One uppercase letter');
+    if (!/[a-z]/.test(pwd)) errors.push('One lowercase letter');
+    if (!/[0-9]/.test(pwd)) errors.push('One number');
+    return errors;
+  };
+
+  const handlePasswordChange = (pwd: string) => {
+    setPassword(pwd);
+    if (pwd) {
+      setPasswordErrors(validatePassword(pwd));
+    } else {
+      setPasswordErrors([]);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,33 +109,68 @@ function RoleSelectionContent() {
       return;
     }
 
+    // Validation for OAuth users
+    if (fromOAuth) {
+      if (!firstName.trim()) {
+        setError('First name is required');
+        return;
+      }
+      if (!lastName.trim()) {
+        setError('Last name is required');
+        return;
+      }
+      if (!password) {
+        setError('Password is required');
+        return;
+      }
+      if (passwordErrors.length > 0) {
+        setError('Password does not meet requirements');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const { databases, config, Permission, Role } = await import('@/lib/appwrite');
+      const { databases, config, Permission, Role, account } = await import('@/lib/appwrite');
       
+      const userDataToSave = {
+        firstName: fromOAuth ? firstName.trim() : userData.name.split(' ')[0] || userData.name,
+        lastName: fromOAuth ? lastName.trim() : userData.name.split(' ').slice(1).join(' ') || '',
+        email: userData.email,
+        role: role,
+        username: `${firstName.toLowerCase().replace(/\s+/g, '')}.${lastName.toLowerCase().replace(/\s+/g, '')}` || userData.name.toLowerCase().replace(/\s+/g, ''),
+        passwordHash: '', // For OAuth, we'll handle this separately
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
       // Create user profile in database
       await databases.createDocument(
         config.databaseId,
         config.collections.users,
         userData.userId,
-        {
-          firstName: userData.name.split(' ')[0] || userData.name,
-          lastName: userData.name.split(' ').slice(1).join(' ') || '',
-          email: userData.email,
-          role: role,
-          username: userData.name.toLowerCase().replace(/\s+/g, ''),
-          passwordHash: '', // OAuth users don't have passwords
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
+        userDataToSave,
         [
           Permission.read(Role.user(userData.userId)),
           Permission.update(Role.user(userData.userId)),
           Permission.delete(Role.user(userData.userId)),
         ]
       );
+
+      // If OAuth user, update their password for future logins
+      if (fromOAuth && password) {
+        try {
+          await account.updatePassword(password);
+        } catch (err) {
+          console.warn('Could not update password (may not be needed for OAuth):', err);
+        }
+      }
 
       // Redirect to appropriate dashboard
       const dashboardUrl = role === 'teacher' ? '/dashboard/teacher' : '/dashboard/student';
@@ -180,6 +244,102 @@ function RoleSelectionContent() {
               {error && (
                 <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded">
                   {error}
+                </div>
+              )}
+
+              {/* OAuth user profile fields */}
+              {fromOAuth && (
+                <div className="space-y-4 pb-4 border-b border-gray-700">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      First Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="Enter your first name"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Last Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Enter your last name"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={userData?.email || ''}
+                      disabled
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-gray-400 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Password *
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => handlePasswordChange(e.target.value)}
+                      placeholder="Enter a strong password"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      required
+                    />
+                    {password && passwordErrors.length > 0 && (
+                      <div className="mt-2 p-2 bg-amber-900/30 border border-amber-700 rounded text-sm text-amber-300">
+                        <p className="font-semibold mb-1">Password must have:</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          {passwordErrors.map((err) => (
+                            <li key={err}>{err}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {password && passwordErrors.length === 0 && (
+                      <p className="mt-2 text-sm text-green-400">✓ Password meets requirements</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Confirm Password *
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      className={`w-full bg-gray-700 border rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-1 ${
+                        confirmPassword && password !== confirmPassword
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                          : 'border-gray-600 focus:border-blue-500 focus:ring-blue-500'
+                      }`}
+                      required
+                    />
+                    {confirmPassword && password !== confirmPassword && (
+                      <p className="mt-2 text-sm text-red-400">Passwords do not match</p>
+                    )}
+                    {confirmPassword && password === confirmPassword && password && (
+                      <p className="mt-2 text-sm text-green-400">✓ Passwords match</p>
+                    )}
+                  </div>
                 </div>
               )}
 
