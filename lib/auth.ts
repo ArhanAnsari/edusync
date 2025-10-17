@@ -95,11 +95,14 @@ export async function getCurrentUser(): Promise<User> {
 
 export async function loginWithGitHub(): Promise<void> {
   try {
+    // Use environment variable for production or fallback to window.location.origin
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    
     // Redirect to GitHub OAuth with callback URL
     account.createOAuth2Session(
       OAuthProvider.Github,
-      `${window.location.origin}/auth/callback/github`, // callback URL to handle role selection
-      `${window.location.origin}/login`, // failure URL
+      `${appUrl}/auth/callback/github`, // callback URL to handle role selection
+      `${appUrl}/login`, // failure URL
     );
   } catch (error: any) {
     throw new Error(error.message || 'Failed to login with GitHub');
