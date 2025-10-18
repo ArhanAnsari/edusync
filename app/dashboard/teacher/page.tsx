@@ -127,6 +127,9 @@ export default function TeacherDashboard() {
               <Link href="/dashboard/teacher/grading" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                 Grading
               </Link>
+              <Link href="/dashboard/teacher/integrations" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                Integrations
+              </Link>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
@@ -201,6 +204,13 @@ export default function TeacherDashboard() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Grading
+              </Link>
+              <Link
+                href="/dashboard/teacher/integrations"
+                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Integrations
               </Link>
               <div className="flex items-center gap-2 px-4 py-2">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">

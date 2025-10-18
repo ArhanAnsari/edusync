@@ -4,7 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import CookieConsent from "@/components/CookieConsent";
-import LiveChat from "@/components/LiveChat";
+import LiveChatLoader from "@/components/LiveChatLoader";
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 
 const inter = Inter({
@@ -81,7 +81,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <CookieConsent />
-          <LiveChat />
+          <LiveChatLoader />
           <ServiceWorkerRegistration />
         </Providers>
       </body>

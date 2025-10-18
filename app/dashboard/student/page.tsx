@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
+import { AIChatbot } from '@/components/ai/ChatBot';
 
 export default function StudentDashboard() {
   const { user, logout, loading } = useAuth();
@@ -151,6 +152,9 @@ export default function StudentDashboard() {
               <Link href="/dashboard/student/badges" className="text-sm text-gray-300 hover:text-yellow-400">
                 Badges
               </Link>
+              <Link href="/dashboard/student/integrations" className="text-sm text-gray-300 hover:text-purple-400">
+                Premium
+              </Link>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
@@ -225,6 +229,13 @@ export default function StudentDashboard() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 🏆 My Badges
+              </Link>
+              <Link
+                href="/dashboard/student/integrations"
+                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                💎 Premium & Integrations
               </Link>
               
               {/* Online/Offline Status - Mobile */}
@@ -348,9 +359,8 @@ export default function StudentDashboard() {
               color="green"
             />
           </div>
-
           {/* Recent Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Recent Materials</CardTitle>
@@ -399,6 +409,16 @@ export default function StudentDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* AI Study Assistant */}
+          <div className="mb-6 sm:mb-8">
+            <AIChatbot 
+              context={`Student: ${user?.name || 'Student'}\nCurrent subjects and materials available in EduSync. Help with understanding concepts, study strategies, and homework questions.`}
+              title="AI Study Assistant"
+              placeholder="Ask me anything about your studies..."
+              minimized={true}
+            />
           </div>
         </motion.div>
       </main>

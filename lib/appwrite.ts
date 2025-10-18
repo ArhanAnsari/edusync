@@ -32,6 +32,11 @@ export const config = {
     materials: process.env.NEXT_PUBLIC_APPWRITE_MATERIALS_COLLECTION_ID!,
     quizAttempts: process.env.NEXT_PUBLIC_APPWRITE_QUIZ_ATTEMPTS_COLLECTION_ID!,
     badges: process.env.NEXT_PUBLIC_APPWRITE_BADGES_COLLECTION_ID!,
+    integrations: process.env.NEXT_PUBLIC_APPWRITE_INTEGRATIONS_COLLECTION_ID!,
+    calendarEvents: process.env.NEXT_PUBLIC_APPWRITE_CALENDAR_EVENTS_COLLECTION_ID!,
+    notifications: process.env.NEXT_PUBLIC_APPWRITE_NOTIFICATIONS_COLLECTION_ID!,
+    payments: process.env.NEXT_PUBLIC_APPWRITE_PAYMENTS_COLLECTION_ID!,
+    meetings: process.env.NEXT_PUBLIC_APPWRITE_MEETINGS_COLLECTION_ID!,
   },
 };
 

@@ -9,7 +9,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Save, BookOpen, Clock, Award } from 'lucide-react';
+import { Plus, Trash2, Save, BookOpen, Clock, Award, Sparkles } from 'lucide-react';
+import { QuizGenerator } from '@/components/ai/QuizGenerator';
 
 interface Question {
   id: string;
@@ -44,6 +45,7 @@ export default function TeacherQuizzesPage() {
   const [timeLimit, setTimeLimit] = useState(30);
   const [maxAttempts, setMaxAttempts] = useState(3);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'teacher') {
@@ -77,6 +79,17 @@ export default function TeacherQuizzesPage() {
         correctAnswer: 0,
       },
     ]);
+  };
+
+  const handleAIGeneratedQuestions = (aiQuestions: any[]) => {
+    const formattedQuestions = aiQuestions.map(q => ({
+      id: ID.unique(),
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+    }));
+    setQuestions([...questions, ...formattedQuestions]);
+    setShowAIGenerator(false);
   };
 
   const updateQuestion = (index: number, field: string, value: any) => {
@@ -244,15 +257,35 @@ export default function TeacherQuizzesPage() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold text-white">Questions</h3>
-                  <Button
-                    onClick={addQuestion}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Question
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setShowAIGenerator(!showAIGenerator)}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      size="sm"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      AI Generate
+                    </Button>
+                    <Button
+                      onClick={addQuestion}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Question
+                    </Button>
+                  </div>
                 </div>
+
+                {/* AI Quiz Generator */}
+                {showAIGenerator && (
+                  <div className="mb-6">
+                    <QuizGenerator 
+                      onQuestionsGenerated={handleAIGeneratedQuestions}
+                      defaultTopic={quizName}
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-6">
                   {questions.map((q, qIndex) => (
