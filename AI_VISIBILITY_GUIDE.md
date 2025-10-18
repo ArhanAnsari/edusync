@@ -185,8 +185,8 @@ npm run dev
 
 Your `.env.local` is now configured with:
 ```bash
-GOOGLE_GENERATIVE_AI_API_KEY="AIzaSyClwLJenMrGbHIoPgPClZPtzl-NyGAHPKM"
-GEMINI_API_KEY="AIzaSyClwLJenMrGbHIoPgPClZPtzl-NyGAHPKM"
+GOOGLE_GENERATIVE_AI_API_KEY="your_api_key"
+GEMINI_API_KEY="your_api_key"
 ```
 
 **⚠️ Security Note**: This API key is now visible in this file. Consider:
