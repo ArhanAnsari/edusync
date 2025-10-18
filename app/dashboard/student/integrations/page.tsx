@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -22,7 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-export default function StudentIntegrationsPage() {
+// Separate component that uses useSearchParams
+function IntegrationsContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -481,5 +482,18 @@ export default function StudentIntegrationsPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function StudentIntegrationsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <IntegrationsContent />
+    </Suspense>
   );
 }
