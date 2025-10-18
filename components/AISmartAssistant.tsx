@@ -226,7 +226,7 @@ export default function AISmartAssistant() {
       setMessages(prev => [
         ...prev,
         {
-          text: "I'm having trouble connecting to my AI brain right now 🤖. Please try again in a moment, or email support@edusync.com for immediate assistance.",
+          text: "I'm having trouble connecting to my AI brain right now 🤖. Please try again in a moment, or email arhanansari2009@gmail.com for immediate assistance.",
           sender: 'assistant',
           type: 'text'
         },
