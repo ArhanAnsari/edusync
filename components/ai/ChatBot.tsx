@@ -1,6 +1,7 @@
 /**
  * AI Chatbot Component
  * Reusable AI chat interface for student assistance
+ * With LaTeX and Markdown rendering support
  */
 
 'use client';
@@ -11,6 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, Send, X, Sparkles, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import 'katex/dist/katex.min.css';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -153,6 +159,128 @@ export function AIChatbot({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        <style jsx global>{`
+          /* Markdown and LaTeX styling for ChatBot messages */
+          .chatbot-message-content {
+            line-height: 1.6;
+          }
+
+          .chatbot-message-content h1,
+          .chatbot-message-content h2,
+          .chatbot-message-content h3 {
+            font-weight: 600;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+          }
+
+          .chatbot-message-content h1 {
+            font-size: 1.5em;
+            border-bottom: 2px solid hsl(var(--border));
+            padding-bottom: 0.3em;
+          }
+
+          .chatbot-message-content h2 {
+            font-size: 1.3em;
+          }
+
+          .chatbot-message-content h3 {
+            font-size: 1.1em;
+          }
+
+          .chatbot-message-content p {
+            margin-bottom: 0.8em;
+          }
+
+          .chatbot-message-content ul,
+          .chatbot-message-content ol {
+            margin-left: 1.5em;
+            margin-bottom: 0.8em;
+          }
+
+          .chatbot-message-content li {
+            margin-bottom: 0.3em;
+          }
+
+          .chatbot-message-content code {
+            background: hsl(var(--muted));
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+          }
+
+          .chatbot-message-content pre {
+            background: hsl(var(--muted));
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 0.8em;
+            border-left: 3px solid hsl(var(--primary));
+          }
+
+          .chatbot-message-content pre code {
+            background: none;
+            padding: 0;
+          }
+
+          .chatbot-message-content blockquote {
+            border-left: 3px solid hsl(var(--primary));
+            padding-left: 1em;
+            margin-left: 0;
+            font-style: italic;
+            opacity: 0.9;
+          }
+
+          .chatbot-message-content strong {
+            font-weight: 600;
+          }
+
+          .chatbot-message-content em {
+            font-style: italic;
+          }
+
+          /* KaTeX math styling */
+          .chatbot-message-content .katex {
+            font-size: 1.1em;
+          }
+
+          .chatbot-message-content .katex-display {
+            margin: 1em 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+          }
+
+          /* Enhanced table styling */
+          .chatbot-message-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1em 0;
+          }
+
+          .chatbot-message-content th,
+          .chatbot-message-content td {
+            border: 1px solid hsl(var(--border));
+            padding: 0.5em;
+            text-align: left;
+          }
+
+          .chatbot-message-content th {
+            background: hsl(var(--muted));
+            font-weight: 600;
+          }
+
+          .chatbot-message-content tr:nth-child(even) {
+            background: hsl(var(--muted) / 0.3);
+          }
+
+          /* Horizontal rules */
+          .chatbot-message-content hr {
+            border: none;
+            border-top: 1px solid hsl(var(--border));
+            margin: 1.5em 0;
+          }
+        `}</style>
+
         {/* Messages Area */}
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-4">
@@ -188,7 +316,45 @@ export function AIChatbot({
                       : 'bg-muted'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  {message.role === 'assistant' ? (
+                    <div className="chatbot-message-content">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath, remarkGfm]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={{
+                          // Custom rendering for code blocks
+                          code({ node, inline, className, children, ...props }: any) {
+                            return inline ? (
+                              <code className={className} {...props}>
+                                {children}
+                              </code>
+                            ) : (
+                              <pre className={className}>
+                                <code {...props}>{children}</code>
+                              </pre>
+                            );
+                          },
+                          // Ensure links open in new tab
+                          a({ node, children, ...props }: any) {
+                            return (
+                              <a
+                                {...props}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                {children}
+                              </a>
+                            );
+                          },
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  )}
                 </div>
               </div>
             ))}

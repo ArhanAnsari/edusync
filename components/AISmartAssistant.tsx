@@ -5,6 +5,11 @@ import { MessageCircle, X, Send, Sparkles, BookOpen, FileQuestion, GraduationCap
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import 'katex/dist/katex.min.css';
 
 interface Message {
   text: string;
@@ -285,6 +290,122 @@ export default function AISmartAssistant() {
         .scrollbar-thin::-webkit-scrollbar-thumb:hover {
           background: rgba(139, 92, 246, 0.7);
         }
+
+        /* Markdown styling for AI messages */
+        .ai-message-content {
+          line-height: 1.6;
+        }
+
+        .ai-message-content h1,
+        .ai-message-content h2,
+        .ai-message-content h3 {
+          font-weight: 600;
+          margin-top: 1em;
+          margin-bottom: 0.5em;
+          color: #e9d5ff;
+        }
+
+        .ai-message-content h1 {
+          font-size: 1.5em;
+          border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+          padding-bottom: 0.3em;
+        }
+
+        .ai-message-content h2 {
+          font-size: 1.3em;
+        }
+
+        .ai-message-content h3 {
+          font-size: 1.1em;
+        }
+
+        .ai-message-content p {
+          margin-bottom: 0.8em;
+        }
+
+        .ai-message-content ul,
+        .ai-message-content ol {
+          margin-left: 1.5em;
+          margin-bottom: 0.8em;
+        }
+
+        .ai-message-content li {
+          margin-bottom: 0.3em;
+        }
+
+        .ai-message-content code {
+          background: rgba(139, 92, 246, 0.2);
+          padding: 0.2em 0.4em;
+          border-radius: 3px;
+          font-family: 'Courier New', monospace;
+          font-size: 0.9em;
+        }
+
+        .ai-message-content pre {
+          background: rgba(0, 0, 0, 0.3);
+          padding: 1em;
+          border-radius: 8px;
+          overflow-x: auto;
+          margin-bottom: 0.8em;
+          border-left: 3px solid rgba(139, 92, 246, 0.5);
+        }
+
+        .ai-message-content pre code {
+          background: none;
+          padding: 0;
+        }
+
+        .ai-message-content blockquote {
+          border-left: 3px solid rgba(139, 92, 246, 0.5);
+          padding-left: 1em;
+          margin-left: 0;
+          font-style: italic;
+          color: #d8b4fe;
+        }
+
+        .ai-message-content strong {
+          font-weight: 600;
+          color: #f3e8ff;
+        }
+
+        .ai-message-content em {
+          font-style: italic;
+          color: #e9d5ff;
+        }
+
+        /* KaTeX math styling */
+        .ai-message-content .katex {
+          font-size: 1.1em;
+        }
+
+        .ai-message-content .katex-display {
+          margin: 1em 0;
+          overflow-x: auto;
+          overflow-y: hidden;
+        }
+
+        /* Enhanced table styling */
+        .ai-message-content table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 1em 0;
+        }
+
+        .ai-message-content th,
+        .ai-message-content td {
+          border: 1px solid rgba(139, 92, 246, 0.3);
+          padding: 0.5em;
+          text-align: left;
+        }
+
+        .ai-message-content th {
+          background: rgba(139, 92, 246, 0.2);
+          font-weight: 600;
+        }
+
+        .ai-message-content tr:nth-child(even) {
+          background: rgba(139, 92, 246, 0.05);
+        }
       `}</style>
 
       {/* Floating AI Assistant Button */}
@@ -293,11 +414,12 @@ export default function AISmartAssistant() {
           <motion.button
             key="ai-button"
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 p-4 rounded-full text-white shadow-2xl
+            className="fixed bottom-6 right-6 z-[9999] p-4 rounded-full text-white shadow-2xl
                        bg-gradient-to-r from-purple-500 via-violet-500 to-purple-600
                        hover:opacity-90 transition-all duration-300 backdrop-blur-lg
                        animate-[gradientPulse_3s_ease-in-out_infinite]
-                       group relative"
+                       group relative
+                       sm:bottom-8 sm:right-8 sm:p-5"
             initial={{ opacity: 0, y: 60, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 60, scale: 0.8 }}
@@ -305,8 +427,13 @@ export default function AISmartAssistant() {
             whileTap={{ scale: 0.95 }}
             aria-label="Open AI Assistant"
             title="AI Smart Assistant"
+            style={{ 
+              zIndex: 9999,
+              position: 'fixed',
+              pointerEvents: 'auto'
+            }}
           >
-            <Bot className="w-6 h-6" />
+            <Bot className="w-6 h-6 sm:w-7 sm:h-7" />
             <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-yellow-300 animate-pulse" />
             
             {/* Tooltip */}
@@ -326,10 +453,17 @@ export default function AISmartAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 120, damping: 14 }}
-            className="fixed bottom-24 right-6 z-50 w-[420px] max-w-[90vw] h-[600px]
+            className="fixed bottom-4 right-4 z-[9999] 
+                       w-[95vw] max-w-[420px] h-[85vh] max-h-[600px]
+                       sm:bottom-24 sm:right-6 sm:w-[420px] sm:h-[600px]
                        rounded-2xl shadow-2xl border border-purple-200/20
                        bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900
                        backdrop-blur-2xl text-white flex flex-col overflow-hidden"
+            style={{ 
+              zIndex: 9999,
+              position: 'fixed',
+              pointerEvents: 'auto'
+            }}
           >
             {/* Header */}
             <div className="p-4 rounded-t-2xl flex items-center justify-between border-b border-purple-200/10 
@@ -399,7 +533,45 @@ export default function AISmartAssistant() {
                         <span className="text-xs font-medium">AI Assistant</span>
                       </div>
                     )}
-                    <div className="whitespace-pre-wrap break-words">{message.text}</div>
+                    {message.sender === 'assistant' ? (
+                      <div className="ai-message-content">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath, remarkGfm]}
+                          rehypePlugins={[rehypeKatex]}
+                          components={{
+                            // Custom rendering for code blocks
+                            code({ node, inline, className, children, ...props }: any) {
+                              return inline ? (
+                                <code className={className} {...props}>
+                                  {children}
+                                </code>
+                              ) : (
+                                <pre className={className}>
+                                  <code {...props}>{children}</code>
+                                </pre>
+                              );
+                            },
+                            // Ensure links open in new tab
+                            a({ node, children, ...props }: any) {
+                              return (
+                                <a
+                                  {...props}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-purple-300 hover:text-purple-200 underline"
+                                >
+                                  {children}
+                                </a>
+                              );
+                            },
+                          }}
+                        >
+                          {message.text}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div className="whitespace-pre-wrap break-words">{message.text}</div>
+                    )}
                   </div>
                 </motion.div>
               ))}
