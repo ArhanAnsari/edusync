@@ -121,7 +121,7 @@ Already configured! ✅
 
 ```bash
 # Your .env.local already has:
-GOOGLE_GENERATIVE_AI_API_KEY=AIzaSyClwLJenMrGbHIoPgPClZPtzl-NyGAHPKM
+GOOGLE_GENERATIVE_AI_API_KEY=your_api_key
 ```
 
 ### 2. **Restart Dev Server**
