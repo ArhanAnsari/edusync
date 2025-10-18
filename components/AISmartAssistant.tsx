@@ -291,7 +291,6 @@ export default function AISmartAssistant() {
           background: rgba(139, 92, 246, 0.7);
         }
 
-        /* Markdown styling for AI messages */
         .ai-message-content {
           line-height: 1.6;
         }
@@ -373,7 +372,6 @@ export default function AISmartAssistant() {
           color: #e9d5ff;
         }
 
-        /* KaTeX math styling */
         .ai-message-content .katex {
           font-size: 1.1em;
         }
@@ -384,7 +382,6 @@ export default function AISmartAssistant() {
           overflow-y: hidden;
         }
 
-        /* Enhanced table styling */
         .ai-message-content table {
           border-collapse: collapse;
           width: 100%;
@@ -414,12 +411,7 @@ export default function AISmartAssistant() {
           <motion.button
             key="ai-button"
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-[9999] p-4 rounded-full text-white shadow-2xl
-                       bg-gradient-to-r from-purple-500 via-violet-500 to-purple-600
-                       hover:opacity-90 transition-all duration-300 backdrop-blur-lg
-                       animate-[gradientPulse_3s_ease-in-out_infinite]
-                       group relative
-                       sm:bottom-8 sm:right-8 sm:p-5"
+            className="fixed bottom-6 right-6 z-[9999] p-4 rounded-full text-white shadow-2xl bg-gradient-to-r from-purple-500 via-violet-500 to-purple-600 hover:opacity-90 transition-all duration-300 backdrop-blur-lg group relative sm:bottom-8 sm:right-8 sm:p-5"
             initial={{ opacity: 0, y: 60, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 60, scale: 0.8 }}
@@ -430,13 +422,13 @@ export default function AISmartAssistant() {
             style={{ 
               zIndex: 9999,
               position: 'fixed',
-              pointerEvents: 'auto'
+              pointerEvents: 'auto',
+              animation: 'gradientPulse 3s ease-in-out infinite'
             }}
           >
             <Bot className="w-6 h-6 sm:w-7 sm:h-7" />
             <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-yellow-300 animate-pulse" />
             
-            {/* Tooltip */}
             <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-black/80 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               AI Smart Assistant
             </div>
@@ -453,12 +445,7 @@ export default function AISmartAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 120, damping: 14 }}
-            className="fixed bottom-4 right-4 z-[9999] 
-                       w-[95vw] max-w-[420px] h-[85vh] max-h-[600px]
-                       sm:bottom-24 sm:right-6 sm:w-[420px] sm:h-[600px]
-                       rounded-2xl shadow-2xl border border-purple-200/20
-                       bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900
-                       backdrop-blur-2xl text-white flex flex-col overflow-hidden"
+            className="fixed bottom-4 right-4 z-[9999] w-[95vw] max-w-[420px] h-[85vh] max-h-[600px] sm:bottom-24 sm:right-6 sm:w-[420px] sm:h-[600px] rounded-2xl shadow-2xl border border-purple-200/20 bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 backdrop-blur-2xl text-white flex flex-col overflow-hidden"
             style={{ 
               zIndex: 9999,
               position: 'fixed',
@@ -466,8 +453,7 @@ export default function AISmartAssistant() {
             }}
           >
             {/* Header */}
-            <div className="p-4 rounded-t-2xl flex items-center justify-between border-b border-purple-200/10 
-                          bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600">
+            <div className="p-4 rounded-t-2xl flex items-center justify-between border-b border-purple-200/10 bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Bot className="w-6 h-6 text-white" />
@@ -496,9 +482,7 @@ export default function AISmartAssistant() {
                     <button
                       key={index}
                       onClick={() => handleQuickAction(action.prompt)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs
-                               bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30
-                               text-purple-100 transition-all duration-200 hover:scale-105"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30 text-purple-100 transition-all duration-200 hover:scale-105"
                     >
                       {action.icon}
                       <span>{action.label}</span>
@@ -539,7 +523,6 @@ export default function AISmartAssistant() {
                           remarkPlugins={[remarkMath, remarkGfm]}
                           rehypePlugins={[rehypeKatex]}
                           components={{
-                            // Custom rendering for code blocks
                             code({ node, inline, className, children, ...props }: any) {
                               return inline ? (
                                 <code className={className} {...props}>
@@ -551,7 +534,6 @@ export default function AISmartAssistant() {
                                 </pre>
                               );
                             },
-                            // Ensure links open in new tab
                             a({ node, children, ...props }: any) {
                               return (
                                 <a
@@ -596,7 +578,7 @@ export default function AISmartAssistant() {
                 </motion.div>
               )}
 
-              {/* Suggested Prompts (show on first load) */}
+              {/* Suggested Prompts */}
               {messages.length === 1 && !isTyping && (
                 <div className="space-y-2">
                   <p className="text-xs text-purple-300 text-center mb-3">Try asking:</p>
@@ -604,9 +586,7 @@ export default function AISmartAssistant() {
                     <button
                       key={index}
                       onClick={() => handleSuggestedPrompt(prompt)}
-                      className="w-full text-left px-4 py-2 rounded-xl text-sm
-                               bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/20
-                               text-purple-100 transition-all duration-200 hover:scale-[1.02]"
+                      className="w-full text-left px-4 py-2 rounded-xl text-sm bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/20 text-purple-100 transition-all duration-200 hover:scale-[1.02]"
                     >
                       💡 {prompt}
                     </button>
@@ -629,15 +609,13 @@ export default function AISmartAssistant() {
                   onChange={(e) => setInputMessage(e.target.value)}
                   placeholder="Ask me anything..."
                   disabled={isTyping}
-                  className="flex-1 bg-white/10 border-purple-400/30 text-white placeholder-gray-400 
-                           rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="flex-1 bg-white/10 border-purple-400/30 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 <Button
                   type="submit"
                   size="icon"
                   disabled={isTyping || !inputMessage.trim()}
-                  className="rounded-xl bg-gradient-to-r from-purple-500 via-violet-500 to-purple-600 
-                           hover:opacity-90 transition shadow-lg disabled:opacity-50"
+                  className="rounded-xl bg-gradient-to-r from-purple-500 via-violet-500 to-purple-600 hover:opacity-90 transition shadow-lg disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
