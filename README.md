@@ -262,7 +262,6 @@ STRIPE_SECRET_KEY=your_stripe_secret_key
 
 # Monitoring
 NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
-```
 
 ---
 
@@ -345,6 +344,9 @@ edusync/
 ├── tsconfig.json
 ├── tailwind.config.ts
 ├── next.config.ts
+
+```
+
 ## 🛠️ Technology Stack
 
 ### Frontend
@@ -601,7 +603,7 @@ See `CRITICAL_FIXES_APPLIED.md` for technical details.
 
 ## 📝 License
 ### Key Statistics
-- **Lines of Code**: 15,000+
+- **Lines of Code**: 25,000+
 - **Components**: 60+
 - **API Endpoints**: 25+
 - **AI Features**: 8+
