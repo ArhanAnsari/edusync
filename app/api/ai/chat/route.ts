@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
     // Get streaming response from AI
     const result = await chatWithAssistant(messages, context);
 
-    // Stream the response back to the client
-    return result;
+    // Return the streaming response
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error('AI chat error:', error);
     return new Response(

@@ -10,6 +10,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import 'katex/dist/katex.min.css';
+import { searchKnowledge } from '@/lib/edusync-knowledge';
 
 interface Message {
   text: string;
@@ -43,42 +44,42 @@ export default function AISmartAssistant() {
   const [showQuickActions, setShowQuickActions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Quick action buttons
+  // Quick action buttons - Improved with EduSync-specific prompts
   const quickActions: QuickAction[] = [
     {
       icon: <BookOpen className="w-4 h-4" />,
-      label: 'Explain Concept',
-      prompt: 'Can you explain a concept to me?',
+      label: 'About EduSync',
+      prompt: 'Tell me about EduSync features and how to use the platform effectively',
       category: 'both'
     },
     {
       icon: <FileQuestion className="w-4 h-4" />,
-      label: 'Generate Quiz',
-      prompt: 'Help me create quiz questions',
-      category: 'teacher'
+      label: 'Course Help',
+      prompt: 'How do I browse courses, enroll in classes, and track my progress on EduSync?',
+      category: 'student'
     },
     {
       icon: <GraduationCap className="w-4 h-4" />,
-      label: 'Study Plan',
-      prompt: 'Create a study plan for me',
+      label: 'Study Tips',
+      prompt: 'Give me effective study strategies and time management tips for online learning',
       category: 'student'
     },
     {
       icon: <Lightbulb className="w-4 h-4" />,
       label: 'Homework Help',
-      prompt: 'I need help with my homework',
+      prompt: 'I need help understanding a concept or solving a problem',
       category: 'student'
     },
     {
       icon: <Zap className="w-4 h-4" />,
-      label: 'Assignment Ideas',
-      prompt: 'Suggest creative assignment ideas',
-      category: 'teacher'
+      label: 'Quiz & Exams',
+      prompt: 'How do quizzes work on EduSync and tips for exam preparation',
+      category: 'student'
     },
     {
       icon: <Sparkles className="w-4 h-4" />,
-      label: 'Summarize Content',
-      prompt: 'Can you summarize this content for me?',
+      label: 'Getting Started',
+      prompt: 'I\'m new to EduSync. How do I get started and make the most of the platform?',
       category: 'both'
     }
   ];
@@ -88,26 +89,32 @@ export default function AISmartAssistant() {
     action => action.category === 'both' || action.category === userRole
   );
 
-  // Suggested prompts for first-time users
+  // Suggested prompts for first-time users - EduSync-focused
   const suggestedPrompts = userRole === 'student' 
     ? [
-        'Help me understand photosynthesis',
-        'Create a study schedule for finals',
-        'Explain Newton\'s laws of motion',
-        'How do I solve quadratic equations?'
+        '📚 What courses are available on EduSync?',
+        '📝 How do I submit assignments?',
+        '🎯 Tips for taking quizzes effectively',
+        '📊 How can I track my learning progress?',
+        '💡 Explain: What is quadratic equation?',
+        '🗓️ Create a study schedule for me'
       ]
     : userRole === 'teacher'
     ? [
-        'Generate 10 multiple-choice questions on World War II',
-        'Suggest engaging activities for teaching fractions',
-        'Create a rubric for essay grading',
-        'Give me tips for classroom management'
+        '📖 How to create and manage courses?',
+        '✅ How does the grading system work?',
+        '👥 Managing student enrollments',
+        '📋 Creating effective assignments',
+        '📊 Viewing student analytics',
+        '🎓 Best practices for online teaching'
       ]
     : [
-        'What is EduSync?',
-        'How can AI help with learning?',
-        'Tell me about your features',
-        'How do I get started?'
+        '🌟 What is EduSync and how does it work?',
+        '📚 What features does EduSync offer?',
+        '🚀 How do I get started with EduSync?',
+        '🎓 Explain the course structure',
+        '💻 Is EduSync mobile-friendly?',
+        '🤖 How can AI help me learn better?'
       ];
 
   // Auto-scroll to bottom
@@ -142,7 +149,7 @@ export default function AISmartAssistant() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  // Enhanced AI-powered message handler
+  // Enhanced AI-powered message handler with knowledge base
   const handleSendMessage = async (messageText?: string) => {
     const userMessage = messageText || inputMessage.trim();
     if (!userMessage || isTyping) return;
@@ -154,18 +161,47 @@ export default function AISmartAssistant() {
     setShowQuickActions(false);
 
     try {
-      // Use AI chat endpoint
+      // Check knowledge base first for EduSync-specific questions
+      const knowledgeResult = searchKnowledge(userMessage);
+      
+      if (knowledgeResult) {
+        // Use predefined answer from knowledge base
+        setMessages(prev => [...prev, { 
+          text: knowledgeResult.answer, 
+          sender: 'assistant',
+          type: 'text'
+        }]);
+        setIsTyping(false);
+        return;
+      }
+
+      // Convert message history to API format
+      const apiMessages = messages
+        .filter(msg => msg.type === 'text')
+        .map(msg => ({
+          role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+          content: msg.text
+        }));
+
+      // Add current user message
+      apiMessages.push({
+        role: 'user' as const,
+        content: userMessage
+      });
+
+      // Use AI chat endpoint with correct format
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          message: userMessage,
-          context: `User role: ${userRole}. Provide helpful, educational responses.`
+          messages: apiMessages,
+          context: `User role: ${userRole}. Provide helpful, educational responses with LaTeX math notation for equations (use $ for inline and $$ for display math) and markdown formatting.`
         }),
       });
 
       if (!response.ok) {
-        throw new Error('AI service unavailable');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'AI service unavailable');
       }
 
       // Stream the response
@@ -223,10 +259,29 @@ export default function AISmartAssistant() {
 
     } catch (error) {
       console.error('AI Chat error:', error);
+      
+      let errorMessage = "I'm having trouble connecting right now 🤖. ";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage += "Network issue - please check your internet connection.";
+        } else if (error.message.includes('API key')) {
+          errorMessage += "Configuration issue - please contact support.";
+        } else if (error.message.includes('rate limit')) {
+          errorMessage += "Too many requests - please wait a moment and try again.";
+        } else {
+          errorMessage += error.message;
+        }
+      } else {
+        errorMessage += "Please try again in a moment.";
+      }
+      
+      errorMessage += "\n\nIf the problem persists, email arhanansari2009@gmail.com";
+      
       setMessages(prev => [
         ...prev,
         {
-          text: "I'm having trouble connecting to my AI brain right now 🤖. Please try again in a moment, or email arhanansari2009@gmail.com for immediate assistance.",
+          text: errorMessage,
           sender: 'assistant',
           type: 'text'
         },
@@ -418,7 +473,7 @@ export default function AISmartAssistant() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             aria-label="Open AI Assistant"
-            title="AI Smart Assistant"
+            title="EduSync Assistant"
             style={{ 
               zIndex: 9999,
               position: 'fixed',
@@ -430,7 +485,7 @@ export default function AISmartAssistant() {
             <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-yellow-300 animate-pulse" />
             
             <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-black/80 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              AI Smart Assistant
+              EduSync Assistant
             </div>
           </motion.button>
         )}
@@ -460,7 +515,7 @@ export default function AISmartAssistant() {
                   <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-yellow-300 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white">AI Smart Assistant</h3>
+                  <h3 className="font-semibold text-white">EduSync Assistant</h3>
                   <p className="text-xs text-purple-100">Powered by Google Gemini</p>
                 </div>
               </div>
