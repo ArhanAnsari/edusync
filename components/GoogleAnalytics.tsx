@@ -9,7 +9,7 @@ declare global {
 
 export default function GoogleAnalytics() {
   // Replace with your Google Analytics measurement ID
-  const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-XXXXXXXXXX';
+  const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-76ER5GSSZ7';
 
   return (
     <>
