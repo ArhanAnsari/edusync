@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { FileText, CheckCircle, XCircle, Award, Users, TrendingUp } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Award, Users, TrendingUp, Sparkles, Copy, Check } from 'lucide-react';
 
 interface Submission {
   $id: string;
@@ -47,6 +47,12 @@ export default function TeacherGradingPage() {
   const [grade, setGrade] = useState('');
   const [feedback, setFeedback] = useState('');
   const [saving, setSaving] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<{
+    suggestedGrade: number;
+    suggestedFeedback: string;
+  } | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [copiedFeedback, setCopiedFeedback] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'teacher') {
@@ -103,6 +109,69 @@ export default function TeacherGradingPage() {
     setGradingSubmission(submission);
     setGrade(submission.grade?.toString() || '');
     setFeedback(submission.feedback || '');
+    setAiSuggestions(null);
+  };
+
+  const getAiGradingSuggestions = async () => {
+    if (!gradingSubmission) return;
+
+    setLoadingAi(true);
+    try {
+      const assignmentTitle = getAssignmentTitle(gradingSubmission.assignmentId);
+      
+      const response = await fetch('/api/ai/grading-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignmentPrompt: assignmentTitle,
+          studentSubmission: gradingSubmission.content,
+          rubric: 'Standard rubric: Content (30%), Clarity (20%), Grammar (20%), Originality (20%), Formatting (10%)',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI suggestions');
+      }
+
+      const data = await response.json();
+      const feedbackText = data.feedback || '';
+      
+      // Parse feedback to extract grade and suggestions
+      const gradeMatch = feedbackText.match(/Grade:\s*(\d+)/i);
+      const suggestedGrade = gradeMatch ? parseInt(gradeMatch[1]) : 75;
+      
+      setAiSuggestions({
+        suggestedGrade,
+        suggestedFeedback: feedbackText,
+      });
+    } catch (error) {
+      console.error('Error getting AI suggestions:', error);
+      alert('Failed to generate AI suggestions');
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  const useSuggestion = (type: 'grade' | 'feedback' | 'both') => {
+    if (!aiSuggestions) return;
+
+    if (type === 'grade' || type === 'both') {
+      setGrade(aiSuggestions.suggestedGrade.toString());
+    }
+
+    if (type === 'feedback' || type === 'both') {
+      setFeedback(aiSuggestions.suggestedFeedback);
+    }
+
+    setAiSuggestions(null);
+  };
+
+  const copyFeedback = () => {
+    if (aiSuggestions) {
+      navigator.clipboard.writeText(aiSuggestions.suggestedFeedback);
+      setCopiedFeedback(true);
+      setTimeout(() => setCopiedFeedback(false), 2000);
+    }
   };
 
   const submitGrade = async () => {
@@ -308,7 +377,87 @@ export default function TeacherGradingPage() {
                   className="mt-2 w-full px-4 py-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-700 text-gray-100 placeholder-gray-500"
                   rows={4}
                 />
+                <div className="mt-3">
+                  <Button
+                    onClick={getAiGradingSuggestions}
+                    disabled={loadingAi}
+                    className="bg-purple-600 hover:bg-purple-700 text-white text-sm"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {loadingAi ? 'Generating...' : 'Get AI Suggestions'}
+                  </Button>
+                </div>
               </div>
+
+              {aiSuggestions && (
+                <Card className="p-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-600/50">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-purple-400" />
+                      <h3 className="text-sm font-semibold text-purple-300">AI Suggestions</h3>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="p-3 bg-gray-700 rounded border border-gray-600">
+                      <p className="text-xs text-gray-400 mb-2">Suggested Grade</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-2xl font-bold text-purple-300">
+                          {aiSuggestions.suggestedGrade}/100
+                        </p>
+                        <Button
+                          onClick={() => useSuggestion('grade')}
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                        >
+                          Use Grade
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-gray-700 rounded border border-gray-600">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-gray-400">Suggested Feedback</p>
+                        <Button
+                          onClick={copyFeedback}
+                          size="sm"
+                          className="bg-gray-600 hover:bg-gray-700 text-white text-xs"
+                        >
+                          {copiedFeedback ? (
+                            <>
+                              <Check className="w-3 h-3 mr-1" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-sm text-gray-200 whitespace-pre-wrap mb-3 max-h-40 overflow-y-auto">
+                        {aiSuggestions.suggestedFeedback}
+                      </p>
+                      <Button
+                        onClick={() => useSuggestion('feedback')}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs w-full"
+                      >
+                        Use This Feedback
+                      </Button>
+                    </div>
+
+                    <Button
+                      onClick={() => useSuggestion('both')}
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                      size="sm"
+                    >
+                      Use All Suggestions
+                    </Button>
+                  </div>
+                </Card>
+              )}
 
               <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-700">
                 <Button

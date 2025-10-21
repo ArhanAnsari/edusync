@@ -264,7 +264,7 @@ You need to create the following collections in your Appwrite database:
     "type": "string",
     "size": 10,
     "required": true,
-    "default": "usd"
+    "default": "inr"
   },
   "description": {
     "type": "string",

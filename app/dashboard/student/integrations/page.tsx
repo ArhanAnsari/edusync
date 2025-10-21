@@ -46,7 +46,7 @@ function IntegrationsContent() {
   const pricingPlans = [
     {
       name: 'Basic',
-      price: 9.99,
+      price: 829,
       features: [
         'Access to all courses',
         'Basic quiz features',
@@ -56,7 +56,7 @@ function IntegrationsContent() {
     },
     {
       name: 'Premium',
-      price: 19.99,
+      price: 1659,
       popular: true,
       features: [
         'Everything in Basic',
@@ -68,7 +68,7 @@ function IntegrationsContent() {
     },
     {
       name: 'Enterprise',
-      price: 49.99,
+      price: 4149,
       features: [
         'Everything in Premium',
         '1-on-1 tutoring sessions',
@@ -149,7 +149,7 @@ function IntegrationsContent() {
         body: JSON.stringify({
           action: 'create_checkout_session',
           amount: plan.price,
-          currency: 'usd',
+          currency: 'inr',
           description: `${plan.name} Plan`,
           plan: plan.name.toLowerCase(),
           successUrl: `${window.location.origin}/dashboard/student/integrations?payment=success`,
@@ -227,7 +227,7 @@ function IntegrationsContent() {
             <CardContent className="p-6">
               <DollarSign className="w-8 h-8 mb-2" />
               <h3 className="text-2xl font-bold">
-                ${payments.filter((p) => p.status === 'completed').reduce((sum, p) => sum + (p.amount || 0), 0).toFixed(2)}
+                ₹{payments.filter((p) => p.status === 'completed').reduce((sum, p) => sum + (p.amount || 0), 0).toFixed(2)}
               </h3>
               <p className="text-sm text-gray-200">Total Spent</p>
             </CardContent>
@@ -274,7 +274,7 @@ function IntegrationsContent() {
                       <CardHeader>
                         <CardTitle className="text-2xl">{plan.name}</CardTitle>
                         <CardDescription className="text-4xl font-bold text-white mt-4">
-                          ${plan.price}
+                          ₹{plan.price}
                           <span className="text-sm text-gray-400">/month</span>
                         </CardDescription>
                       </CardHeader>
@@ -321,7 +321,7 @@ function IntegrationsContent() {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xl font-bold">${payment.amount}</p>
+                            <p className="text-xl font-bold">₹{payment.amount}</p>
                             <Badge
                               variant={payment.status === 'completed' ? 'default' : 'secondary'}
                               className={payment.status === 'completed' ? 'bg-green-600' : ''}

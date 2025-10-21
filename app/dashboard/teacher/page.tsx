@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { databases, config } from '@/lib/appwrite';
+import { databases, config, realtime } from '@/lib/appwrite';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileCheck, Menu, X, Award } from 'lucide-react';
@@ -42,6 +42,64 @@ export default function TeacherDashboard() {
 
     if (user) {
       fetchStats();
+
+      // Set up real-time subscriptions for all collections
+      const setupRealtimeSubscriptions = async () => {
+        try {
+          const unsubscribers: Array<() => void> = [];
+
+          // Watch users collection
+          const usersUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.users}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => usersUnsub());
+
+          // Watch assignments collection
+          const assignmentsUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.assignments}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => assignmentsUnsub());
+
+          // Watch quizzes collection
+          const quizzesUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.quizzes}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => quizzesUnsub());
+
+          // Watch submissions collection
+          const submissionsUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.submissions}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => submissionsUnsub());
+
+          // Watch quizAttempts collection
+          const quizAttemptsUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.quizAttempts}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => quizAttemptsUnsub());
+
+          return unsubscribers;
+        } catch (error) {
+          console.error('Error setting up real-time subscriptions:', error);
+          return [];
+        }
+      };
+
+      let unsubscribers: Array<() => void> = [];
+      setupRealtimeSubscriptions().then((unsubs) => {
+        unsubscribers = unsubs;
+      });
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+        unsubscribers.forEach((unsub) => unsub());
+      };
     }
 
     return () => {
@@ -249,6 +307,7 @@ export default function TeacherDashboard() {
               label="Total Students"
               value={stats.totalStudents.toString()}
               color="blue"
+              onClick={() => router.push('/dashboard/teacher/students')}
             />
             <StatsCard
               icon={ClipboardList}
@@ -343,11 +402,12 @@ export default function TeacherDashboard() {
   );
 }
 
-function StatsCard({ icon: Icon, label, value, color }: {
+function StatsCard({ icon: Icon, label, value, color, onClick }: {
   icon: any;
   label: string;
   value: string;
   color: string;
+  onClick?: () => void;
 }) {
   const colorClasses = {
     blue: 'bg-blue-100 text-blue-600',
@@ -360,8 +420,10 @@ function StatsCard({ icon: Icon, label, value, color }: {
     <motion.div
       whileHover={{ scale: 1.05 }}
       transition={{ type: 'spring', stiffness: 300 }}
+      onClick={onClick}
+      className={onClick ? 'cursor-pointer' : ''}
     >
-      <Card className="dark:bg-gray-800 dark:border-gray-700">
+      <Card className="dark:bg-gray-800 dark:border-gray-700 h-full">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>

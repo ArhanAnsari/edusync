@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { databases, config } from '@/lib/appwrite';
+import { databases, config, realtime } from '@/lib/appwrite';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Trophy, FileText, Download, LogOut, WifiOff, Wifi, Menu, X } from 'lucide-react';
@@ -47,16 +47,70 @@ export default function StudentDashboard() {
 
     if (user) {
       fetchStats();
-      
-      // Set up real-time polling for stats (every 30 seconds)
-      const statsInterval = setInterval(() => {
-        fetchStats();
-      }, 30000);
-      
+
+      // Set up real-time subscriptions for all relevant collections
+      const setupRealtimeSubscriptions = async () => {
+        try {
+          const unsubscribers: Array<() => void> = [];
+
+          // Watch materials collection
+          const materialsUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.materials}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => materialsUnsub());
+
+          // Watch quizzes collection
+          const quizzesUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.quizzes}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => quizzesUnsub());
+
+          // Watch assignments collection
+          const assignmentsUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.assignments}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => assignmentsUnsub());
+
+          // Watch quiz attempts collection
+          const quizAttemptsUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.quizAttempts}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => quizAttemptsUnsub());
+
+          // Watch badges collection
+          const badgesUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.badges}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => badgesUnsub());
+
+          // Watch submissions collection
+          const submissionsUnsub = realtime.subscribe(
+            [`databases.${config.databaseId}.collections.${config.collections.submissions}.documents`],
+            () => fetchStats()
+          );
+          unsubscribers.push(() => submissionsUnsub());
+
+          return unsubscribers;
+        } catch (error) {
+          console.error('Error setting up real-time subscriptions:', error);
+          return [];
+        }
+      };
+
+      let unsubscribers: Array<() => void> = [];
+      setupRealtimeSubscriptions().then((unsubs) => {
+        unsubscribers = unsubs;
+      });
+
       return () => {
         window.removeEventListener('online', handleOnline);
         window.removeEventListener('offline', handleOffline);
-        clearInterval(statsInterval);
+        unsubscribers.forEach((unsub) => unsub());
       };
     }
 

@@ -19,6 +19,13 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 export const functions = new Functions(client);
 
+// Real-time subscriptions through client
+export const realtime = {
+  subscribe: (channels: string[], callback: (data: any) => void) => {
+    return client.subscribe(channels, callback);
+  }
+};
+
 export { ID, Query, Permission, Role };
 
 export const config = {

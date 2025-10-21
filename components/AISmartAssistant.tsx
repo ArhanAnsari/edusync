@@ -199,62 +199,71 @@ export default function AISmartAssistant() {
         }),
       });
 
+      // Check response status first, BEFORE reading body
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'AI service unavailable');
+        let errorMessage = 'AI service unavailable';
+        try {
+          // Only try to parse error body if status code indicates an error
+          const errorData = await response.clone().json();
+          errorMessage = errorData.error || errorData.details || errorMessage;
+        } catch (parseError) {
+          // If body can't be parsed, use default error
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      // Stream the response
+      // Stream the response from successful response
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let aiResponse = '';
 
       if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          
-          for (const line of lines) {
-            if (line.startsWith('0:')) {
-              const content = line.slice(2).replace(/^"|"$/g, '');
-              aiResponse += content;
-              
-              // Update message in real-time
-              setMessages(prev => {
-                const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+              if (line.startsWith('0:')) {
+                const content = line.slice(2).replace(/^"|"$/g, '');
+                aiResponse += content;
                 
-                if (lastMessage?.sender === 'assistant' && lastMessage.type === 'text') {
-                  newMessages[newMessages.length - 1] = {
-                    ...lastMessage,
-                    text: aiResponse
-                  };
-                } else {
-                  newMessages.push({
-                    text: aiResponse,
-                    sender: 'assistant',
-                    type: 'text'
-                  });
-                }
-                
-                return newMessages;
-              });
+                // Update message in real-time
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  const lastMessage = newMessages[newMessages.length - 1];
+                  
+                  if (lastMessage?.sender === 'assistant' && lastMessage.type === 'text') {
+                    newMessages[newMessages.length - 1] = {
+                      ...lastMessage,
+                      text: aiResponse
+                    };
+                  } else {
+                    newMessages.push({
+                      text: aiResponse,
+                      sender: 'assistant',
+                      type: 'text'
+                    });
+                  }
+                  
+                  return newMessages;
+                });
+              }
             }
           }
+        } catch (streamError) {
+          console.error('Stream parsing error:', streamError);
+          throw new Error('Failed to stream response');
         }
       }
 
-      // If no streaming response, add complete message
+      // If no response received at all
       if (!aiResponse) {
-        const data = await response.json();
-        setMessages(prev => [...prev, { 
-          text: data.response || 'I received your message. How else can I help?', 
-          sender: 'assistant',
-          type: 'text'
-        }]);
+        throw new Error('No response received from AI service');
       }
 
     } catch (error) {

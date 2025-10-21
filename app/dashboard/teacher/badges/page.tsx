@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Award, Star, Trophy, Crown, Target, Zap, Check, X as XIcon } from 'lucide-react';
+import { Award, Star, Trophy, Crown, Target, Zap, Check, X as XIcon, Flame, Heart, Lightbulb, Medal, Rocket, Shield, BookOpen, Brain, Clock, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -16,7 +16,9 @@ import Footer from '@/components/Footer';
 
 interface Student {
   $id: string;
-  name: string;
+  name?: string;
+  fullName?: string;
+  username?: string;
   email: string;
 }
 
@@ -34,6 +36,16 @@ const availableBadges: Badge[] = [
   { icon: Target, name: 'Goal Achiever', description: 'Completed all assignments', color: 'bg-green-500' },
   { icon: Zap, name: 'Fast Learner', description: 'Quick completion', color: 'bg-orange-500' },
   { icon: Award, name: 'Perfect Attendance', description: 'Never missed a class', color: 'bg-pink-500' },
+  { icon: Flame, name: 'On Fire', description: 'Consistent daily participation', color: 'bg-red-500' },
+  { icon: Heart, name: 'Team Player', description: 'Excellent collaboration', color: 'bg-rose-500' },
+  { icon: Lightbulb, name: 'Creative Thinker', description: 'Innovative solutions', color: 'bg-amber-500' },
+  { icon: Medal, name: 'Champion', description: 'Winner of competition', color: 'bg-yellow-600' },
+  { icon: Rocket, name: 'High Achiever', description: 'Exceeded expectations', color: 'bg-cyan-500' },
+  { icon: Shield, name: 'Reliable', description: 'Consistent quality work', color: 'bg-indigo-500' },
+  { icon: BookOpen, name: 'Bookworm', description: 'Extensive reading', color: 'bg-teal-500' },
+  { icon: Brain, name: 'Critical Thinker', description: 'Outstanding analysis', color: 'bg-violet-500' },
+  { icon: Clock, name: 'Punctual', description: 'Always on time', color: 'bg-emerald-500' },
+  { icon: Users, name: 'Helper', description: 'Helps fellow students', color: 'bg-sky-500' },
 ];
 
 export default function BadgeAwardPage() {
@@ -63,10 +75,16 @@ export default function BadgeAwardPage() {
         []
       );
       const studentList = response.documents.filter((doc: any) => doc.role === 'student') as unknown as Student[];
+      console.log('Fetched students:', studentList); // Debug log
       setStudents(studentList);
     } catch (error) {
       console.error('Failed to fetch students:', error);
     }
+  };
+
+  // Helper function to get student display name
+  const getStudentName = (student: Student) => {
+    return student.name || student.fullName || student.username || student.email.split('@')[0] || 'Unknown';
   };
 
   const awardBadge = async () => {
@@ -100,7 +118,7 @@ export default function BadgeAwardPage() {
         ]
       );
 
-      setMessage(`✅ Badge "${selectedBadge.name}" awarded to ${selectedStudent.name || 'student'}!`);
+      setMessage(`✅ Badge "${selectedBadge.name}" awarded to ${getStudentName(selectedStudent)}!`);
       setSelectedStudent(null);
       setSelectedBadge(null);
     } catch (error: any) {
@@ -111,10 +129,11 @@ export default function BadgeAwardPage() {
     }
   };
 
-  const filteredStudents = students.filter(student =>
-    student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = students.filter(student => {
+    const studentName = getStudentName(student);
+    return studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.email?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (authLoading) {
     return (
@@ -179,7 +198,7 @@ export default function BadgeAwardPage() {
               <CardTitle className="text-white">Available Badges</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-8 gap-4">
                 {availableBadges.map((badge) => {
                   const Icon = badge.icon;
                   return (
@@ -232,32 +251,35 @@ export default function BadgeAwardPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-                {filteredStudents.map((student) => (
-                  <motion.div
-                    key={student.$id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedStudent?.$id === student.$id
-                        ? 'border-blue-500 bg-blue-600/20'
-                        : 'border-gray-600 hover:border-blue-500'
-                    }`}
-                    onClick={() => setSelectedStudent(student)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                        {student.name?.charAt(0).toUpperCase() || '?'}
+                {filteredStudents.map((student) => {
+                  const displayName = getStudentName(student);
+                  return (
+                    <motion.div
+                      key={student.$id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedStudent?.$id === student.$id
+                          ? 'border-blue-500 bg-blue-600/20'
+                          : 'border-gray-600 hover:border-blue-500'
+                      }`}
+                      onClick={() => setSelectedStudent(student)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+                          {displayName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-white truncate">{displayName}</p>
+                          <p className="text-xs text-gray-400 truncate">{student.email || 'No email'}</p>
+                        </div>
+                        {selectedStudent?.$id === student.$id && (
+                          <Check className="h-5 w-5 text-blue-400 flex-shrink-0" />
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm text-white">{student.name || 'Unknown'}</p>
-                        <p className="text-xs text-gray-400 truncate">{student.email || 'No email'}</p>
-                      </div>
-                      {selectedStudent?.$id === student.$id && (
-                        <Check className="h-5 w-5 text-blue-400" />
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
 
               {filteredStudents.length === 0 && (

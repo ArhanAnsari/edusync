@@ -47,7 +47,7 @@ export async function POST(request: Request) {
             {
               userId: user.$id,
               amount,
-              currency: currency || 'usd',
+              currency: currency || 'inr',
               description: description || 'EduSync Payment',
               plan: plan || 'basic',
               status: 'pending',
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
             userId: user.$id,
             sessionId: session.id,
             amount,
-            currency: currency || 'usd',
+            currency: currency || 'inr',
             description,
             plan: plan || 'basic',
             status: 'pending',
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
 
         const paymentData = new URLSearchParams({
           amount: (amount * 100).toString(),
-          currency: currency || 'usd',
+          currency: currency || 'inr',
           'metadata[userId]': user.$id,
           'metadata[description]': description || 'EduSync Payment',
         });

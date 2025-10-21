@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Save, BookOpen, Calendar, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Save, BookOpen, Calendar, AlertCircle, Sparkles, Copy, Check } from 'lucide-react';
 
 interface Assignment {
   $id: string;
@@ -35,6 +35,9 @@ export default function TeacherAssignmentsPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [copiedSuggestion, setCopiedSuggestion] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'teacher') {
@@ -132,6 +135,53 @@ export default function TeacherAssignmentsPage() {
     }
   };
 
+  const getAiSuggestions = async () => {
+    if (!title.trim()) {
+      alert('Please enter an assignment title first');
+      return;
+    }
+
+    setLoadingAi(true);
+    try {
+      const response = await fetch('/api/ai/assignment-helper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: title,
+          studentLevel: 'intermediate',
+          numberOfSuggestions: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI suggestions');
+      }
+
+      const data = await response.json();
+      setAiSuggestions(data.suggestions?.[0] || 'No suggestions available');
+    } catch (error) {
+      console.error('Error getting AI suggestions:', error);
+      alert('Failed to generate AI suggestions');
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  const useSuggestion = () => {
+    if (aiSuggestions) {
+      setDescription(aiSuggestions);
+      setAiSuggestions(null);
+    }
+  };
+
+  const copySuggestion = () => {
+    if (aiSuggestions) {
+      navigator.clipboard.writeText(aiSuggestions);
+      setCopiedSuggestion(true);
+      setTimeout(() => setCopiedSuggestion(false), 2000);
+    }
+  };
+
   const isOverdue = (dueDate: string) => {
     return new Date(dueDate) < new Date();
   };
@@ -191,7 +241,55 @@ export default function TeacherAssignmentsPage() {
                   className="mt-2 w-full px-4 py-2 border border-gray-600 bg-gray-700 text-gray-100 placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={6}
                 />
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    onClick={getAiSuggestions}
+                    disabled={loadingAi}
+                    className="bg-purple-600 hover:bg-purple-700 text-white text-sm"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {loadingAi ? 'Generating...' : 'Get AI Suggestions'}
+                  </Button>
+                </div>
               </div>
+
+              {aiSuggestions && (
+                <Card className="p-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-600/50">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-purple-400" />
+                      <h3 className="text-sm font-semibold text-purple-300">AI Suggestion</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={copySuggestion}
+                        size="sm"
+                        className="bg-gray-600 hover:bg-gray-700 text-white text-xs"
+                      >
+                        {copiedSuggestion ? (
+                          <>
+                            <Check className="w-3 h-3 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={useSuggestion}
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                      >
+                        Use This
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-200 whitespace-pre-wrap">{aiSuggestions}</p>
+                </Card>
+              )}
 
               <div>
                 <Label htmlFor="dueDate" className="text-gray-300">Due Date *</Label>

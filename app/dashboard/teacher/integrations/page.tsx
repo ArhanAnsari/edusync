@@ -69,9 +69,9 @@ export default function TeacherIntegrationsPage() {
   // Stripe state
   const [stripeKey, setStripeKey] = useState('');
   const [stripePlans, setStripePlans] = useState([
-    { name: 'Basic', price: 9.99, priceId: '' },
-    { name: 'Premium', price: 19.99, priceId: '' },
-    { name: 'Enterprise', price: 49.99, priceId: '' },
+    { name: 'Basic', price: 829, priceId: '' },
+    { name: 'Premium', price: 1659, priceId: '' },
+    { name: 'Enterprise', price: 4149, priceId: '' },
   ]);
   const [payments, setPayments] = useState<any[]>([]);
 
@@ -316,7 +316,7 @@ export default function TeacherIntegrationsPage() {
           action: 'create_checkout_session',
           secretKey: stripeKey || undefined,
           amount: plan.price,
-          currency: 'usd',
+          currency: 'inr',
           description: `${plan.name} Plan`,
           plan: plan.name.toLowerCase(),
         }),
@@ -700,7 +700,7 @@ export default function TeacherIntegrationsPage() {
                         <CardHeader>
                           <CardTitle className="text-xl">{plan.name}</CardTitle>
                           <CardDescription className="text-3xl font-bold text-white">
-                            ${plan.price}
+                            ₹{plan.price}
                             <span className="text-sm text-gray-400">/month</span>
                           </CardDescription>
                         </CardHeader>
