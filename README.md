@@ -244,7 +244,7 @@ POST /api/ai/answer-question           # Q&A with context
 ```
 
 ### AI Technology Stack
-- **Model**: Google Gemini 1.5 Flash
+- **Model**: Google Gemini 2.5 Pro
 - **SDK**: Vercel AI SDK v5.0+
 - **Provider**: @ai-sdk/google v2.0+
 - **Validation**: Zod schemas for structured output
@@ -254,7 +254,7 @@ POST /api/ai/answer-question           # Q&A with context
   - Context-aware conversations
   - Error handling and rate limiting
 
----LY_API_KEY=your_daily_api_key
+DAILY_API_KEY=your_daily_api_key
 
 # Payment Processing
 NEXT_PUBLIC_STRIPE_PUBLIC_KEY=your_stripe_public_key
