@@ -3,12 +3,42 @@
  * Powered by Google Generative AI (Gemini) via Vercel AI SDK
  */
 
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText, generateObject, streamText } from 'ai';
 import { z } from 'zod';
 
-// Initialize Gemini model
-const model = google('gemini-2.5-pro');
+// Validate API Key is available
+if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+  console.warn(
+    '⚠️  WARNING: No Gemini API key found. AI services will not work.\n' +
+    'Please set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY environment variable.'
+  );
+}
+const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+const google = createGoogleGenerativeAI({
+  apiKey: apiKey,
+});
+
+// Get the best available model - using Gemini 2.5 as preferred
+function getModel() {
+  // Try to use Gemini 2.5 Flash (primary choice for balance of speed and quality)
+  try {
+    return google('gemini-2.5-flash');
+  } catch (error) {
+    // First fallback to Gemini 2.5 Pro (for more complex reasoning if Flash is unavailable)
+    try {
+      return google('gemini-2.5-pro');
+    } catch (secondError) {
+      // Second fallback to a stable model if 2.5 isn't available
+      console.warn("Failed to initialize Gemini 2.5 models, falling back to older version");
+      return google('gemini-2.0-flash');
+    }
+  }
+}
+
+// Initialize Gemini model dynamically
+const model = getModel();
 
 // ============================================
 // TYPE DEFINITIONS
@@ -78,6 +108,11 @@ export async function generateQuizQuestions(
   difficulty: 'easy' | 'medium' | 'hard' = 'medium'
 ): Promise<QuizQuestion[]> {
   try {
+    // Validate API key before making request
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('AI service not configured. Missing API key.');
+    }
+
     const { object } = await generateObject({
       model,
       schema: quizQuestionSchema,
@@ -95,10 +130,38 @@ Requirements:
 Format the response as a structured JSON object with an array of questions.`,
     });
 
+    if (!object.questions || object.questions.length === 0) {
+      throw new Error('No questions generated');
+    }
+
     return object.questions;
   } catch (error) {
     console.error('Error generating quiz questions:', error);
-    throw new Error('Failed to generate quiz questions. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
+      throw new Error('AI service authentication failed. Please check configuration.');
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      throw new Error('AI service rate limit exceeded. Please try again later.');
+    }
+    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
+      throw new Error('AI service timeout. Please try again.');
+    }
+    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
+      // Handle schema validation errors that might occur with Gemini 2.5
+      throw new Error('Schema error with AI service. Please check the format of your request.');
+    }
+    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
+      // Handle content safety blocks
+      throw new Error('Content blocked by AI safety filters. Please modify your request.');
+    }
+    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
+      // Model availability issues
+      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
+    }
+    
+    throw new Error(`Failed to generate quiz questions: ${errorMessage}`);
   }
 }
 
@@ -125,6 +188,15 @@ export async function generateAssignmentSuggestions(
   numberOfSuggestions: number = 3
 ): Promise<AssignmentSuggestion[]> {
   try {
+    // Validate API key
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('AI service not configured. Missing API key.');
+    }
+
+    if (!topic || topic.trim().length === 0) {
+      throw new Error('Topic cannot be empty');
+    }
+
     const { object } = await generateObject({
       model,
       schema: assignmentSchema,
@@ -141,10 +213,38 @@ Requirements:
 Format the response as a structured JSON object with an array of assignment suggestions.`,
     });
 
+    if (!object.suggestions || object.suggestions.length === 0) {
+      throw new Error('No suggestions generated');
+    }
+
     return object.suggestions;
   } catch (error) {
     console.error('Error generating assignment suggestions:', error);
-    throw new Error('Failed to generate assignment suggestions. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
+      throw new Error('AI service authentication failed. Please check configuration.');
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      throw new Error('AI service rate limit exceeded. Please try again later.');
+    }
+    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
+      throw new Error('AI service timeout. Please try again.');
+    }
+    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
+      throw new Error('Schema error with AI service. Please check the format of your request.');
+    }
+    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
+      throw new Error('Content blocked by AI safety filters. Please modify your request.');
+    }
+    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
+      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
+    }
+    if (errorMessage.includes('not configured')) {
+      throw new Error(errorMessage);
+    }
+    
+    throw new Error(`Failed to generate assignment suggestions: ${errorMessage}`);
   }
 }
 
@@ -166,6 +266,18 @@ export async function getGradingFeedback(
   rubric?: string
 ): Promise<GradingFeedback> {
   try {
+    // Validate API key
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('AI service not configured. Missing API key.');
+    }
+
+    if (!assignmentPrompt || assignmentPrompt.trim().length === 0) {
+      throw new Error('Assignment prompt cannot be empty');
+    }
+    if (!studentSubmission || studentSubmission.trim().length === 0) {
+      throw new Error('Student submission cannot be empty');
+    }
+
     const { object } = await generateObject({
       model,
       schema: gradingSchema,
@@ -190,10 +302,38 @@ Requirements:
 Be supportive and educational in your feedback. Focus on helping the student learn and improve.`,
     });
 
+    if (!object || object.score === undefined) {
+      throw new Error('Invalid grading feedback generated');
+    }
+
     return object;
   } catch (error) {
     console.error('Error generating grading feedback:', error);
-    throw new Error('Failed to generate grading feedback. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
+      throw new Error('AI service authentication failed. Please check configuration.');
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      throw new Error('AI service rate limit exceeded. Please try again later.');
+    }
+    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
+      throw new Error('AI service timeout. Please try again.');
+    }
+    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
+      throw new Error('Schema error with AI service. Please check the format of your request.');
+    }
+    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
+      throw new Error('Content blocked by AI safety filters. Please modify your request.');
+    }
+    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
+      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
+    }
+    if (errorMessage.includes('not configured')) {
+      throw new Error(errorMessage);
+    }
+    
+    throw new Error(`Failed to generate grading feedback: ${errorMessage}`);
   }
 }
 
@@ -213,6 +353,15 @@ export async function summarizeContent(
   contentType: 'article' | 'video-transcript' | 'lecture-notes' | 'textbook' = 'article'
 ): Promise<ContentSummary> {
   try {
+    // Validate API key
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('AI service not configured. Missing API key.');
+    }
+
+    if (!content || content.trim().length === 0) {
+      throw new Error('Content cannot be empty');
+    }
+
     const { object } = await generateObject({
       model,
       schema: summarySchema,
@@ -231,10 +380,38 @@ Requirements:
 Focus on what's most important for learning and retention.`,
     });
 
+    if (!object || !object.summary) {
+      throw new Error('No summary generated');
+    }
+
     return object;
   } catch (error) {
     console.error('Error summarizing content:', error);
-    throw new Error('Failed to summarize content. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
+      throw new Error('AI service authentication failed. Please check configuration.');
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      throw new Error('AI service rate limit exceeded. Please try again later.');
+    }
+    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
+      throw new Error('AI service timeout. Please try again.');
+    }
+    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
+      throw new Error('Schema error with AI service. Please check the format of your request.');
+    }
+    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
+      throw new Error('Content blocked by AI safety filters. Please modify your request.');
+    }
+    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
+      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
+    }
+    if (errorMessage.includes('not configured')) {
+      throw new Error(errorMessage);
+    }
+    
+    throw new Error(`Failed to summarize content: ${errorMessage}`);
   }
 }
 
@@ -263,6 +440,15 @@ export async function getStudyRecommendations(
   }
 ): Promise<StudyRecommendation[]> {
   try {
+    // Validate API key
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('AI service not configured. Missing API key.');
+    }
+
+    if (!studentContext.currentTopics || studentContext.currentTopics.length === 0) {
+      throw new Error('Current topics are required');
+    }
+
     const { object } = await generateObject({
       model,
       schema: recommendationSchema,
@@ -284,10 +470,38 @@ Requirements:
 Focus on helping the student succeed and stay motivated.`,
     });
 
+    if (!object.recommendations || object.recommendations.length === 0) {
+      throw new Error('No recommendations generated');
+    }
+
     return object.recommendations;
   } catch (error) {
     console.error('Error generating study recommendations:', error);
-    throw new Error('Failed to generate study recommendations. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
+      throw new Error('AI service authentication failed. Please check configuration.');
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      throw new Error('AI service rate limit exceeded. Please try again later.');
+    }
+    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
+      throw new Error('AI service timeout. Please try again.');
+    }
+    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
+      throw new Error('Schema error with AI service. Please check the format of your request.');
+    }
+    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
+      throw new Error('Content blocked by AI safety filters. Please modify your request.');
+    }
+    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
+      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
+    }
+    if (errorMessage.includes('not configured')) {
+      throw new Error(errorMessage);
+    }
+    
+    throw new Error(`Failed to generate study recommendations: ${errorMessage}`);
   }
 }
 
@@ -301,6 +515,15 @@ export async function explainConcept(
   level: 'simple' | 'detailed' | 'advanced' = 'detailed'
 ): Promise<string> {
   try {
+    // Validate API key
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('AI service not configured. Missing API key.');
+    }
+
+    if (!concept || concept.trim().length === 0) {
+      throw new Error('Concept cannot be empty');
+    }
+
     const { text } = await generateText({
       model,
       prompt: `Explain the concept of "${concept}" in a ${level} way${context ? ` in the context of ${context}` : ''}.
@@ -311,12 +534,42 @@ Requirements based on level:
 - Advanced: Include technical details, edge cases, advanced applications, and theoretical foundations.
 
 Make the explanation educational, engaging, and easy to understand for students.`,
+      maxOutputTokens: 1024,
+      temperature: 0.7,
     });
+
+    if (!text || text.trim().length === 0) {
+      throw new Error('AI service returned empty response');
+    }
 
     return text;
   } catch (error) {
     console.error('Error explaining concept:', error);
-    throw new Error('Failed to explain concept. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
+      throw new Error('AI service authentication failed. Please check configuration.');
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      throw new Error('AI service rate limit exceeded. Please try again later.');
+    }
+    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
+      throw new Error('AI service timeout. Please try again.');
+    }
+    if (errorMessage.includes('empty response')) {
+      throw new Error('AI service returned no response. Please try again.');
+    }
+    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
+      throw new Error('Content blocked by AI safety filters. Please modify your request.');
+    }
+    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
+      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
+    }
+    if (errorMessage.includes('not configured')) {
+      throw new Error(errorMessage);
+    }
+    
+    throw new Error(`Failed to explain concept: ${errorMessage}`);
   }
 }
 
@@ -385,14 +638,81 @@ EduSync is a cutting-edge educational platform that provides:
 
 Remember: You're not just answering questions - you're helping students become better learners! 🚀`;
 
+    // Validate API key before making request
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('AI service not configured. Missing API key.');
+    }
+
+    // Validate messages format
+    if (!messages || messages.length === 0) {
+      throw new Error('Messages array is required and must contain at least one message');
+    }
+
     return await streamText({
       model,
       system: systemPrompt,
       messages,
+      temperature: 0.7,
+      maxOutputTokens: 1024,
+      providerOptions: {
+        google: {
+          // Enable thinking capabilities for Gemini 2.5 models with optimal budget for education
+          thinkingConfig: {
+            thinkingBudget: 8192, // Increased to recommended value for complex educational content
+            includeThoughts: false, // Don't include thoughts in response to users
+          },
+          // Set safety settings
+          safetySettings: [
+            {
+              category: 'HARM_CATEGORY_HATE_SPEECH',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+            {
+              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+            {
+              category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+            {
+              category: 'HARM_CATEGORY_HARASSMENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            }
+          ]
+        }
+      }
     });
   } catch (error) {
     console.error('Error in chat assistant:', error);
-    throw new Error('Failed to process chat message. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
+      throw new Error('AI service authentication failed. Please check configuration.');
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      throw new Error('AI service rate limit exceeded. Please try again later.');
+    }
+    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
+      throw new Error('AI service timeout. The response took too long. Please try again.');
+    }
+    if (errorMessage.includes('not configured')) {
+      throw new Error(errorMessage);
+    }
+    if (errorMessage.includes('safety') || errorMessage.includes('block') || errorMessage.includes('harmful')) {
+      throw new Error('Content blocked by AI safety filters. Please modify your request.');
+    }
+    if (errorMessage.includes('thinking') || errorMessage.includes('budget')) {
+      throw new Error('AI thinking process exceeded limits. Please simplify your request.');
+    }
+    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
+      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
+    }
+    if (errorMessage.includes('GenerateContentRequest')) {
+      throw new Error('Invalid request format for Gemini model. Please check your input format.');
+    }
+    
+    throw new Error(`Failed to process chat message: ${errorMessage}`);
   }
 }
 
@@ -406,6 +726,15 @@ export async function answerQuestion(
   previousMessages?: Array<{ role: 'user' | 'assistant'; content: string }>
 ): Promise<string> {
   try {
+    // Validate API key before making request
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('AI service not configured. Missing API key.');
+    }
+
+    if (!question || question.trim().length === 0) {
+      throw new Error('Question cannot be empty');
+    }
+
     const contextPrompt = context
       ? `\n\nContext/Reference Material:\n${context}`
       : '';
@@ -429,12 +758,36 @@ Requirements:
 - Encourage further learning
 
 If the question is unclear, ask for clarification. If you need more context, say so.`,
+      maxOutputTokens: 1024,
+      temperature: 0.7,
     });
+
+    if (!text || text.trim().length === 0) {
+      throw new Error('AI service returned empty response');
+    }
 
     return text;
   } catch (error) {
     console.error('Error answering question:', error);
-    throw new Error('Failed to answer question. Please try again.');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
+      throw new Error('AI service authentication failed. Please check configuration.');
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      throw new Error('AI service rate limit exceeded. Please try again later.');
+    }
+    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
+      throw new Error('AI service timeout. Please try again.');
+    }
+    if (errorMessage.includes('empty response')) {
+      throw new Error('AI service returned no response. Please try again.');
+    }
+    if (errorMessage.includes('not configured')) {
+      throw new Error(errorMessage);
+    }
+    
+    throw new Error(`Failed to answer question: ${errorMessage}`);
   }
 }
 
@@ -446,14 +799,14 @@ If the question is unclear, ask for clarification. If you need more context, say
  * Check if AI API key is configured
  */
 export function isAIConfigured(): boolean {
-  return !!process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  return !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY);
 }
 
 /**
  * Get AI model name
  */
 export function getModelName(): string {
-  return process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+  return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 }
 
 /**

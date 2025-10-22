@@ -8,6 +8,17 @@ import { generateAssignmentSuggestions } from '@/lib/ai';
 
 export async function POST(req: NextRequest) {
   try {
+    // Check API key is configured
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      return NextResponse.json(
+        {
+          error: 'AI service not configured',
+          details: 'Missing required API key. Please contact administrator.'
+        },
+        { status: 503 }
+      );
+    }
+
     const { topic, studentLevel, numberOfSuggestions } = await req.json();
 
     if (!topic || typeof topic !== 'string') {
@@ -57,12 +68,31 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Assignment generation error:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    let statusCode = 500;
+    let userMessage = 'Failed to generate assignment suggestions';
+
+    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
+      statusCode = 503;
+      userMessage = 'AI service authentication failed';
+    } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      statusCode = 429;
+      userMessage = 'AI service rate limited. Please try again later.';
+    } else if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
+      statusCode = 504;
+      userMessage = 'AI service timeout. Please try again.';
+    } else if (errorMessage.includes('not configured')) {
+      statusCode = 503;
+      userMessage = errorMessage;
+    }
+
     return NextResponse.json(
       {
-        error: 'Failed to generate assignment suggestions',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: userMessage,
+        details: errorMessage,
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }
