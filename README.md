@@ -347,46 +347,229 @@ edusync/
 
 ```
 
-## 🛠️ Technology Stack
+## 🛠️ Technology Stack (A to Z)
 
-### Frontend
-- **Framework**: Next.js 15.5.4 with App Router
-- **UI Library**: React 19
-- **Styling**: Tailwind CSS 4
-- **Animations**: Framer Motion
-- **Component Library**: Radix UI, DaisyUI
-- **Icons**: Lucide React, React Icons
-- **Charts**: Recharts
+### 📦 **Frontend Framework & Runtime**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **React** | ^19.2.0 | UI library for building components |
+| **Next.js** | ^15.5.4 | React framework with SSR/SSG capabilities |
+| **TypeScript** | ^5 | Type-safe JavaScript superset |
+| **Turbopack** | Built-in | High-performance bundler |
 
-### AI & Machine Learning (NEW!)
-- **AI SDK**: Vercel AI SDK v5.0+
-- **AI Provider**: Google Generative AI (@ai-sdk/google)
-- **Model**: Google Gemini 1.5 Flash
-- **Validation**: Zod for schema validation
-- **Features**: Quiz generation, grading, chatbot, content summarization
+### 🎨 **UI & Styling**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Tailwind CSS** | ^4 | Utility-first CSS framework |
+| **DaisyUI** | ^5.2.0 | Component library built on Tailwind |
+| **Framer Motion** | ^12.23.22 | Animation library for React |
+| **Radix UI** (various) | Latest | Unstyled accessible components |
+| **Class Variance Authority** | ^0.7.1 | CSS class management |
+| **Clsx** | ^2.1.1 | Conditional className utility |
+| **Tailwind Merge** | ^3.3.1 | Merge Tailwind classes intelligently |
+| **Tailwind Animate** | ^0.2.10 | Animation utilities for Tailwind |
+| **React Icons** | ^5.5.0 | Icon library (various icon sets) |
+| **Lucide React** | ^0.544.0 | Modern icon library |
 
-### Backend & Serviceser Motion
-- **Component Library**: Radix UI, DaisyUI
-- **Icons**: Lucide React, React Icons
-- **Charts**: Recharts
+### 🤖 **AI & Machine Learning**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Vercel AI SDK** | ^5.0.76 | Universal AI SDK for streaming/generation |
+| **@ai-sdk/google** | ^2.0.23 | Google Generative AI provider (Gemini) |
+| **Google Gemini 2.5** | API | Advanced AI model for text/content analysis |
+| **Zod** | ^4.1.12 | TypeScript-first schema validation |
+| **KaTeX** | ^0.16.25 | Mathematical formula rendering (LaTeX) |
 
-### Backend & Services
-- **Backend**: Appwrite (open-source BaaS)
-- **Real-time**: Socket.io
-- **Collaboration**: Yjs + TipTap + Y-WebSocket
-- **Video**: Daily.co
-- **Email**: Resend
-- **Payments**: Stripe
-- **Whiteboard**: Excalidraw
+### 📝 **Content & Markdown**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **React Markdown** | ^10.1.0 | Render Markdown as React components |
+| **Remark Math** | ^6.0.0 | Support for LaTeX in Markdown |
+| **Rehype KaTeX** | ^7.0.1 | Render KaTeX formulas in HTML |
+| **Remark GFM** | ^4.0.1 | GitHub Flavored Markdown support |
 
-### Development & DevOps
-- **Language**: TypeScript 5
-- **Package Manager**: npm/yarn
-- **Build Tool**: Turbopack
-- **Monitoring**: Sentry
-- **Linting**: ESLint
-- **Database**: Appwrite (PostgreSQL)
-- **Storage**: Appwrite Storage
+### 📧 **Email & Communication**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **@react-email/components** | ^0.5.6 | Email component library |
+| **@react-email/render** | ^1.3.2 | Render React components as email |
+| **Resend** | ^6.1.2 | Email delivery service API |
+
+### 🗄️ **Backend & Database**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Appwrite** | ^21.0.0 | Open-source backend-as-a-service |
+| **Firebase** | ^12.4.0 | Backup/additional database option |
+
+### 🔌 **Real-time & Collaboration**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Socket.io** | ^4.8.1 | Real-time bidirectional communication |
+| **Socket.io-client** | ^4.8.1 | Client-side Socket.io |
+| **Yjs** | ^13.6.27 | Shared editing & collaboration framework |
+| **Y-Websocket** | ^3.0.0 | WebSocket provider for Yjs |
+| **idb** | ^8.0.3 | IndexedDB wrapper library |
+
+### 🎥 **Video & Communication**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **@daily-co/daily-js** | ^0.84.0 | Video conferencing SDK |
+
+### 🎨 **Rich Text & Whiteboard**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **TipTap** | ^3.6.6 | Headless Vue/React rich text editor |
+| **@tiptap/react** | ^3.6.6 | React bindings for TipTap |
+| **@excalidraw/excalidraw** | ^0.18.0 | Excalidraw whiteboard drawing tool |
+
+### 📊 **Analytics & Visualization**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Recharts** | ^3.2.1 | React charts library |
+
+### 🔐 **Security & Monitoring**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **@sentry/nextjs** | ^10.17.0 | Error tracking & performance monitoring |
+
+### 🎯 **Theme & Notifications**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Next Themes** | ^0.4.6 | Dark/light mode management |
+| **Sonner** | ^2.0.7 | Toast notifications library |
+
+### 🛠️ **Development & Build Tools**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **ESLint** | ^9 | Code linting & quality assurance |
+| **@eslint/eslintrc** | ^3 | ESLint RC parser |
+| **PostCSS** | ^4 | CSS processing tool |
+| **@tailwindcss/postcss** | ^4 | Tailwind PostCSS plugin |
+
+### 🎯 **Utility Libraries**
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Clsx/ClassNames** | ^2.1.1 | Conditional CSS class management |
+| **Tailwind Merge** | ^3.3.1 | Intelligent Tailwind class merging |
+
+---
+
+## 🔗 **Third-Party Integrations**
+
+| Service | Purpose | Authentication |
+|---------|---------|-----------------|
+| **GitHub** | OAuth login, repo access | OAuth 2.0 |
+| **Google Calendar** | Event syncing, scheduling | OAuth 2.0 |
+| **Slack** | Notifications & messaging | Webhook/API |
+| **Zoom** | Video conferencing | API Token |
+| **Stripe** | Payment processing | API Keys |
+| **Daily.co** | HD video conferencing | API Key |
+| **Resend** | Email delivery | API Key |
+| **Sentry** | Error tracking | DSN |
+
+---
+
+## 📊 **Project Statistics**
+
+```
+Total Dependencies:     45+ packages
+Frontend Libraries:     14 technologies
+Backend Services:       8 technologies
+AI/ML Technologies:     3+ technologies
+Real-time Tech:         4 technologies
+Integration APIs:       7+ services
+Development Tools:      5+ tools
+────────────────────────────────────
+Total Tech Stack:       ~85 technologies
+```
+
+---
+
+## 🏗️ **Architecture Overview**
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                   Frontend Layer                         │
+│  React 19 + Next.js 15.5.4 + TypeScript 5              │
+│  (Tailwind CSS 4 + DaisyUI + Framer Motion)            │
+└──────────────────────────────────────────────────────────┘
+                          ↓
+┌──────────────────────────────────────────────────────────┐
+│              API & Real-time Layer                       │
+│  Next.js API Routes + Socket.io + Yjs                  │
+│  (Streaming, WebSockets, Real-time Collaboration)       │
+└──────────────────────────────────────────────────────────┘
+                          ↓
+┌──────────────────────────────────────────────────────────┐
+│              AI & Intelligence Layer                     │
+│  Vercel AI SDK v5.0+ + Google Gemini 2.5               │
+│  (LLM Generation, Analysis, Reasoning, Validation)      │
+└──────────────────────────────────────────────────────────┘
+                          ↓
+┌──────────────────────────────────────────────────────────┐
+│            Backend & Services Layer                      │
+│  Appwrite v21.0.0 + Firebase + IndexedDB               │
+│  (Auth, Database, Storage, Offline Sync)                │
+└──────────────────────────────────────────────────────────┘
+                          ↓
+┌──────────────────────────────────────────────────────────┐
+│          Third-party Integrations                        │
+│  GitHub | Google Calendar | Slack | Zoom | Stripe      │
+│  Daily.co | Resend | Sentry                            │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 **Key Technology Highlights**
+
+### ✨ **Modern Frontend Stack**
+- Latest **React 19** with hooks and concurrent features
+- **Next.js 15.5.4** with App Router and Turbopack bundler
+- **Tailwind CSS 4** for rapid UI development
+- **TypeScript 5** for type-safe code
+
+### 🤖 **Cutting-Edge AI**
+- **Google Gemini 2.5** for intelligent features
+- **Vercel AI SDK** for streaming and structured generation
+- 8+ AI-powered features (chat, quiz generation, grading, etc.)
+
+### 🔄 **Real-Time Capabilities**
+- **Socket.io** for real-time messaging and live updates
+- **Yjs + TipTap** for collaborative document editing
+- **Y-WebSocket** for persistent collaboration
+- **IndexedDB** for offline-first architecture
+
+### 🎥 **Communication Features**
+- **Daily.co** for HD video conferencing
+- **Zoom integration** for alternative video option
+- Real-time chat with Socket.io
+
+### 📊 **Rich Visualizations**
+- **Recharts** for interactive data charts
+- **Excalidraw** for whiteboard collaboration
+- **KaTeX** for mathematical formula rendering
+
+### 🔐 **Security & Monitoring**
+- **Appwrite** for secure backend-as-a-service
+- **Sentry** for error tracking and monitoring
+- **Role-based access control** throughout app
+
+---
+
+## 📝 **Configuration Files**
+
+| File | Purpose |
+|------|---------|
+| `next.config.ts` | Next.js configuration |
+| `tsconfig.json` | TypeScript configuration |
+| `tailwind.config.ts` | Tailwind CSS customization |
+| `postcss.config.mjs` | PostCSS setup |
+| `components.json` | UI component config |
+| `.env.local` | Environment variables |
+| `sentry.*.config.ts` | Sentry monitoring setup |
+| `package.json` | Dependencies & scripts |
+| `eslint.config.mjs` | Linting rules |
 
 ---
 
