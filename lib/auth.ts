@@ -1,6 +1,7 @@
 import { account, databases, ID, config, Permission, Role } from './appwrite';
 import { UserRole, User } from './types';
 import { OAuthProvider } from 'appwrite';
+import { getBaseUrl } from './utils';
 
 export async function signup(
   email: string,
@@ -95,8 +96,8 @@ export async function getCurrentUser(): Promise<User> {
 
 export async function loginWithGitHub(): Promise<void> {
   try {
-    // Use environment variable for production or fallback to window.location.origin
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    // Get the correct base URL based on environment (production or development)
+    const appUrl = getBaseUrl();
     
     // Redirect to GitHub OAuth with callback URL
     account.createOAuth2Session(
