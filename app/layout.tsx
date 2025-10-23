@@ -13,46 +13,67 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://edusync.appwrite.network"),
   title: {
-    default: "EduSync - Offline-First Learning Platform",
-    template: "%s | EduSync"
+    default: "EduSync – AI-Powered Offline-First Learning Platform",
+    template: "%s | EduSync",
   },
-  description: "Access education anywhere, anytime with offline-first collaborative learning. Sync automatically, work offline, and collaborate in real-time.",
-  keywords: ["education", "learning platform", "offline learning", "collaborative learning", "edtech", "online education", "LMS"],
-  authors: [{ name: "Arhan Ansari", url: "https://arhanansari.me" }],
+  description:
+    "EduSync is a real-time, AI-powered, offline-first collaborative learning platform built with Appwrite and Gemini AI. Learn anywhere, sync automatically, and collaborate seamlessly.",
+  keywords: [
+    "EduSync",
+    "AI learning platform",
+    "Appwrite Hacktoberfest",
+    "offline learning",
+    "collaborative education",
+    "real-time classroom",
+    "Next.js project",
+    "edtech innovation",
+    "LMS platform",
+    "Gemini AI",
+  ],
+  authors: [
+    { name: "Arhan Ansari", url: "https://arhanansari.me" },
+  ],
   creator: "Arhan Ansari",
-  publisher: "EduSync",
+  publisher: "EduSync by Arhan Ansari (CodeWithArhan)",
   manifest: "/site.webmanifest",
+  category: "Education",
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
+    shortcut: "/favicon.ico",
   },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://edusync.appwrite.network",
-    title: "EduSync - Offline-First Learning Platform",
-    description: "Access education anywhere, anytime with offline-first collaborative learning",
     siteName: "EduSync",
+    title: "EduSync – AI-Powered Offline-First Learning Platform",
+    description:
+      "Learn anywhere, anytime with EduSync — an offline-first collaborative learning platform powered by Appwrite and Gemini AI.",
     images: [
       {
-        url: "/logo.png",
+        url: "https://edusync.appwrite.network/logo.png",
         width: 1200,
         height: 630,
-        alt: "EduSync - Offline-First Learning Platform",
+        alt: "EduSync – AI-Powered Offline-First Learning Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "EduSync - Offline-First Learning Platform",
-    description: "Access education anywhere, anytime with offline-first collaborative learning",
+    site: "@codewitharhan",
     creator: "@codewitharhan",
-    images: ["/logo.png"],
+    title: "EduSync – AI-Powered Offline-First Learning Platform",
+    description:
+      "Access education anywhere, anytime with EduSync — a collaborative platform built for real-time and offline learning.",
+    images: ["https://edusync.appwrite.network/logo.png"],
   },
   robots: {
     index: true,
     follow: true,
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
@@ -61,9 +82,22 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  alternates: {
+    canonical: "https://edusync.appwrite.network",
+    languages: {
+      "en-US": "https://edusync.appwrite.network",
+    },
+  },
   verification: {
     google: "zyojXIJ6aqb5QJzKv8szkobvKQ7F-8rm3bB7O54czX0",
     yandex: "0c083ce3826e4fb0",
+    bing: "C7A7D2B41A5046F6A27F5C3BB5E33C65",
+  },
+  appLinks: {
+    web: {
+      url: "https://edusync.appwrite.network",
+      should_fallback: true,
+    },
   },
 };
 
