@@ -96,17 +96,22 @@ export async function getCurrentUser(): Promise<User> {
 
 export async function loginWithGitHub(): Promise<void> {
   try {
-    // Get the correct base URL based on environment (production or development)
     const appUrl = getBaseUrl();
-    
-    // Redirect to GitHub OAuth with callback URL
-    account.createOAuth2Session(
+
+    // Get OAuth token instead of auto redirect
+    const oauthResponse = await account.createOAuth2Token(
       OAuthProvider.Github,
-      `${appUrl}/auth/callback/github`, // callback URL to handle role selection
-      `${appUrl}/login`, // failure URL
+      `${appUrl}/auth/callback/github`,
+      `${appUrl}/login`
     );
+
+    // Redirect the user manually (for SSR/Next.js routing safety)
+    if (oauthResponse?.url) {
+      window.location.href = oauthResponse.url;
+    }
   } catch (error: any) {
-    throw new Error(error.message || 'Failed to login with GitHub');
+    console.error("GitHub OAuth initiation failed:", error);
+    throw new Error(error.message || "Failed to initiate GitHub OAuth");
   }
 }
 
