@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Clock, Award, CheckCircle, XCircle, Play, Send } from 'lucide-react';
+import { isOnline, handleOfflineSave } from '@/lib/offline-sync';
+import { toast } from 'sonner';
 
 interface Question {
   id: string;
@@ -143,84 +145,62 @@ export default function StudentQuizzesPage() {
   };
 
   const submitQuiz = async (autoSubmit = false) => {
-    // CRITICAL: Synchronous ref check - prevents duplicate submissions at entry point
-    if (isSubmittingRef.current) {
-      console.warn('Submission already in progress, blocking duplicate call');
-      return;
-    }
+  if (isSubmittingRef.current) return;
+  if (!user || !activeQuiz || !currentAttemptId || !questions.length) return;
 
-    if (!user || !activeQuiz || !currentAttemptId || !questions.length) {
-      return;
-    }
+  if (!autoSubmit && Object.keys(answers).length < questions.length) {
+    if (!confirm("You haven’t answered all questions. Submit anyway?")) return;
+  }
 
-    if (!autoSubmit && Object.keys(answers).length < questions.length) {
-      if (!confirm('You haven\'t answered all questions. Submit anyway?')) {
-        return;
-      }
-    }
+  isSubmittingRef.current = true;
+  setSubmitting(true);
 
-    // Set ref FIRST (synchronous) to block any concurrent calls
-    isSubmittingRef.current = true;
-    setSubmitting(true);
-    
-    try {
-      // Calculate score
-      let correctCount = 0;
-      questions.forEach((q) => {
-        if (answers[q.id] === q.correctAnswer) {
-          correctCount++;
-        }
+  try {
+    // Calculate score
+    const correctCount = questions.reduce(
+      (acc, q) => acc + (answers[q.id] === q.correctAnswer ? 1 : 0),
+      0
+    );
+    const score = Math.round((correctCount / questions.length) * 100);
+
+    const attemptData = {
+      id: currentAttemptId,
+      quizId: activeQuiz.quizId,
+      studentId: user.$id,
+      answers,
+      score,
+      completedAt: new Date().toISOString(),
+      syncStatus: isOnline() ? 'synced' : 'pending',
+    };
+
+    if (!isOnline()) {
+      await handleOfflineSave('quizAttempts', attemptData);
+      toast.info('You are offline — attempt saved locally!', {
+        description: 'It will sync automatically when you’re back online.',
       });
-      const score = Math.round((correctCount / questions.length) * 100);
-
-      const attemptData = {
-        attemptId: currentAttemptId, // Use the pre-generated attempt ID
-        quizId: activeQuiz.quizId,
-        userId: user.$id,
-        answers: JSON.stringify(answers),
-        score,
-        attemptNumber: getAttemptCount(activeQuiz.quizId) + 1,
-        completedAt: new Date().toISOString(),
-        $createdAt: new Date().toISOString(),
-        $updatedAt: new Date().toISOString(),
-      };
-
-      if (isOnline) {
-        // Submit online
-        await databases.createDocument(
-          config.databaseId,
-          config.collections.quizAttempts,
-          attemptData.attemptId,
-          attemptData,
-          [
-            Permission.read(Role.user(user.$id)),
-            Permission.update(Role.user(user.$id)),
-          ]
-        );
-        console.log('Quiz submitted successfully:', attemptData.attemptId);
-        alert(`Quiz submitted! Your score: ${score}%`);
-      } else {
-        // Save offline
-        await saveToOfflineDB('quiz_attempts', attemptData);
-        alert(`Saved offline! Your score: ${score}%. Will sync when online.`);
-      }
-
-      // Reset quiz state
-      setActiveQuiz(null);
-      setQuestions([]);
-      setAnswers({});
-      setTimeLeft(0);
-      setCurrentAttemptId(null);
-      fetchAttempts();
-    } catch (error: any) {
-      console.error('Error submitting quiz:', error);
-      alert('Failed to submit quiz: ' + error.message);
-    } finally {
-      // Always reset both the ref and state
-      isSubmittingRef.current = false;
-      setSubmitting(false);
+    } else {
+      await fetch('/api/sync/quizAttempts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(attemptData),
+      });
+      toast.success(`Quiz submitted! Score: ${score}%`);
     }
-  };
+
+    setActiveQuiz(null);
+    setQuestions([]);
+    setAnswers({});
+    setTimeLeft(0);
+    setCurrentAttemptId(null);
+    fetchAttempts();
+  } catch (error: any) {
+    console.error('Error submitting quiz:', error);
+    toast.error('Failed to submit quiz', { description: error.message });
+  } finally {
+    isSubmittingRef.current = false;
+    setSubmitting(false);
+  }
+};
 
   const getAttemptCount = (quizId: string) => {
     return attempts.filter((a) => a.quizId === quizId).length;
