@@ -15,6 +15,7 @@ import Footer from '@/components/Footer';
 import { AIChatbot } from '@/components/ai/ChatBot';
 import { syncPendingData } from '@/lib/offline-sync';
 import { toast } from 'sonner';
+import SyncIndicator from '@/components/SyncIndicator';
 
 export default function StudentDashboard() {
   const { user, logout, loading } = useAuth();
@@ -223,21 +224,10 @@ export default function StudentDashboard() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4">
-              {/* Online/Offline Indicator */}
-              <div className="hidden sm:flex items-center gap-2">
-                {isOnline ? (
-                  <>
-                    <Wifi className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-600">Online</span>
-                  </>
-                ) : (
-                  <>
-                    <WifiOff className="h-4 w-4 text-orange-600" />
-                    <span className="text-sm text-orange-600">Offline</span>
-                  </>
-                )}
-              </div>
+            {/* Sync Indicator */}
+           <div className="hidden sm:flex items-center gap-3">
+              <SyncIndicator />
+           </div>
 
               <div className="hidden sm:flex items-center gap-2">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm sm:text-base">
