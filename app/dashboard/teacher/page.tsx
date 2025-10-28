@@ -11,6 +11,8 @@ import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileChec
 import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
+import { syncPendingData } from '@/lib/offline-sync';
+import { toast } from 'sonner';
 
 export default function TeacherDashboard() {
   const { user, logout, loading } = useAuth();
@@ -34,7 +36,17 @@ export default function TeacherDashboard() {
     }
 
     // Network status monitoring
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline = () => {
+     setIsOnline(true);
+     toast.success('Back Online! Syncing pending data...');
+     syncPendingData(async (item) => {
+    await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
+    });
+  });
+};
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
