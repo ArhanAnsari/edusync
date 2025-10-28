@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Calendar, AlertCircle, Send, CheckCircle, Clock } from 'lucide-react';
+import { isOnline, handleOfflineSave } from '@/lib/offline-sync';
+import { toast } from 'sonner';
 import Footer from '@/components/Footer';
 
 interface Assignment {
@@ -73,45 +75,49 @@ export default function StudentAssignmentsPage() {
     return submissions.find((s) => s.assignmentId === assignmentId && s.userId === user?.$id);
   };
 
-  const submitAssignment = async () => {
-    if (!user || !activeAssignment || !submissionContent.trim()) {
-      alert('Please enter your submission content');
-      return;
-    }
+const submitAssignment = async () => {
+  if (!user || !activeAssignment || !submissionContent.trim()) {
+    toast.error('Please enter your submission content');
+    return;
+  }
 
-    setSubmitting(true);
-    try {
-      const submissionId = ID.unique();
-      await databases.createDocument(
-        config.databaseId,
-        config.collections.submissions,
-        submissionId,
-        {
-          submissionId,
-          assignmentId: activeAssignment.assignmentId,
-          userId: user.$id,
-          userName: user.name, // Add user name to submission
-          userEmail: user.email, // Add user email to submission
-          content: submissionContent,
-          submittedAt: new Date().toISOString(),
-        },
-        [
-          Permission.read(Role.any()),
-          Permission.update(Role.user(user.$id)),
-        ]
-      );
+  setSubmitting(true);
+  const submissionId = ID.unique();
 
-      alert('Assignment submitted successfully!');
-      setActiveAssignment(null);
-      setSubmissionContent('');
-      fetchData();
-    } catch (error: any) {
-      console.error('Error submitting assignment:', error);
-      alert('Failed to submit assignment: ' + error.message);
-    } finally {
-      setSubmitting(false);
-    }
+  const submissionData = {
+    id: submissionId,
+    assignmentId: activeAssignment.assignmentId,
+    studentId: user.$id,
+    content: submissionContent,
+    submittedAt: new Date().toISOString(),
+    syncStatus: isOnline() ? 'synced' : 'pending',
   };
+
+  try {
+    if (!isOnline()) {
+      await handleOfflineSave('submissions', submissionData);
+      toast.info('Offline submission saved locally!', {
+        description: 'It will sync automatically when you’re back online.',
+      });
+    } else {
+      await fetch('/api/sync/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submissionData),
+      });
+      toast.success('Assignment submitted successfully!');
+    }
+
+    setActiveAssignment(null);
+    setSubmissionContent('');
+    fetchData();
+  } catch (error: any) {
+    console.error('Error submitting assignment:', error);
+    toast.error('Submission failed', { description: error.message });
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const isOverdue = (dueDate: string) => {
     return new Date(dueDate) < new Date();
