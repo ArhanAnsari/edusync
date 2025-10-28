@@ -6,6 +6,7 @@ import GoogleAnalytics from "@/components/GoogleAnalytics";
 import CookieConsent from "@/components/CookieConsent";
 import LiveChatLoader from "@/components/LiveChatLoader";
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
+import AutoSyncManager from '@/components/AutoSyncManager';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -117,6 +118,7 @@ export default function RootLayout({
           <CookieConsent />
           <LiveChatLoader />
           <ServiceWorkerRegistration />
+          <AutoSyncManager />
         </Providers>
       </body>
     </html>
