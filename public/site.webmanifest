@@ -1,11 +1,18 @@
 {
-  "name": "EduSync",
+  "name": "EduSync – AI-Powered Offline-First Learning Platform",
   "short_name": "EduSync",
-  "description": "Offline-first collaborative learning platform",
+  "description": "EduSync is an AI-powered, offline-first collaborative learning platform built with Appwrite and Gemini AI. Learn anywhere, sync automatically, and collaborate seamlessly.",
   "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "background_color": "#0b1120",
   "theme_color": "#2563eb",
+  "categories": ["education", "productivity", "ai", "learning"],
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
@@ -18,6 +25,57 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "EduSync Dashboard"
+    },
+    {
+      "src": "/screenshots/quiz.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "Interactive Quiz View"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Courses",
+      "short_name": "Courses",
+      "url": "/dashboard/student",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Assignments",
+      "short_name": "Tasks",
+      "url": "/dashboard/assignments",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Chat Support",
+      "short_name": "Support",
+      "url": "/support",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "protocol_handlers": [
+    {
+      "protocol": "web+edusync",
+      "url": "/?url=%s"
     }
   ]
 }

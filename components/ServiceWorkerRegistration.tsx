@@ -4,26 +4,33 @@ import { useEffect } from 'react';
 
 export default function ServiceWorkerRegistration() {
   useEffect(() => {
-    // Only register service worker in production
-    if (
-      'serviceWorker' in navigator &&
-      process.env.NODE_ENV === 'production'
-    ) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((registration) => {
-          console.log('Service Worker registered:', registration);
-          
-          // Check for updates periodically
-          setInterval(() => {
-            registration.update();
-          }, 60000); // Check every minute
-        })
-        .catch((error) => {
-          console.error('Service Worker registration failed:', error);
-        });
-    } else if (process.env.NODE_ENV === 'development') {
-      console.log('[SW] Service Worker disabled in development mode');
+    if ('serviceWorker' in navigator) {
+      const registerSW = async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          console.log('[SW] Registered:', registration);
+
+          // Auto-update logic
+          setInterval(() => registration.update(), 60 * 1000);
+
+          // Reload when new service worker takes control
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[SW] New version installed, reloading...');
+                  window.location.reload();
+                }
+              });
+            }
+          });
+        } catch (error) {
+          console.error('[SW] Registration failed:', error);
+        }
+      };
+
+      registerSW();
     }
   }, []);
 
