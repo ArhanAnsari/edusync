@@ -104,6 +104,11 @@ export async function syncPendingData() {
   if (!isOnline()) return;
 
   const stores: (keyof EduSyncDB)[] = ['quizAttempts', 'submissions'];
+  let totalSynced = 0;
+  let totalFailed = 0;
+
+  // 🔔 Dispatch a global sync start event
+  window.dispatchEvent(new CustomEvent('sync-start'));
 
   for (const storeName of stores) {
     const pendingItems = await getPendingSyncItems(storeName);
@@ -112,21 +117,39 @@ export async function syncPendingData() {
       try {
         const type = storeName === 'quizAttempts' ? 'quizAttempt' : 'submission';
 
-        const res = await fetch('/api/sync', {
+        const res = await fetch(`/api/sync/${storeName}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, data: item }),
+          body: JSON.stringify(item),
         });
 
         if (res.ok) {
           await saveToOfflineDB(storeName, { ...item, syncStatus: 'synced' });
+          totalSynced++;
         } else {
+          totalFailed++;
           console.error(`Failed to sync ${storeName}:`, await res.text());
         }
       } catch (error) {
+        totalFailed++;
         console.error(`Error syncing ${storeName}:`, error);
       }
     }
+  }
+
+  // 🟢 Dispatch sync complete event
+  window.dispatchEvent(
+    new CustomEvent('sync-complete', {
+      detail: { success: totalSynced, failed: totalFailed },
+    })
+  );
+
+  // Optional toast notifications
+  if (totalSynced > 0) {
+    toast.success(`✅ ${totalSynced} items synced successfully.`);
+  }
+  if (totalFailed > 0) {
+    toast.error(`⚠️ ${totalFailed} items failed to sync.`);
   }
 }
 
@@ -136,4 +159,14 @@ export function setupOnlineListener(callback: () => void) {
   if (typeof window === 'undefined') return;
   window.addEventListener('online', callback);
   return () => window.removeEventListener('online', callback);
+}
+
+// ------------------ BACKGROUND SYNC ------------------
+
+export function registerBackgroundSync() {
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    navigator.serviceWorker.ready.then((registration) => {
+      registration.sync.register('edusync-background-sync').catch(console.error);
+    });
+  }
 }
