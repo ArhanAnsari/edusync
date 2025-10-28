@@ -11,6 +11,9 @@ import { BookOpen, Users, ClipboardList, Trophy, LogOut, WifiOff, Wifi, FileChec
 import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
+import { syncPendingData } from '@/lib/offline-sync';
+import { toast } from 'sonner';
+import SyncIndicator from '@/components/SyncIndicator';
 
 export default function TeacherDashboard() {
   const { user, logout, loading } = useAuth();
@@ -34,7 +37,12 @@ export default function TeacherDashboard() {
     }
 
     // Network status monitoring
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline = async () => {
+      setIsOnline(true);
+      toast.success('Back Online! Syncing pending data...');
+      await syncPendingData();
+    };
+
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
@@ -190,21 +198,10 @@ export default function TeacherDashboard() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4">
-              {/* Online/Offline Indicator */}
-              <div className="hidden sm:flex items-center gap-2">
-                {isOnline ? (
-                  <>
-                    <Wifi className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-600">Online</span>
-                  </>
-                ) : (
-                  <>
-                    <WifiOff className="h-4 w-4 text-orange-600" />
-                    <span className="text-sm text-orange-600">Offline</span>
-                  </>
-                )}
-              </div>
+            {/* Sync Indicator */}
+           <div className="hidden sm:flex items-center gap-3">
+              <SyncIndicator />
+           </div>
 
               <div className="hidden sm:flex items-center gap-2">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm sm:text-base">
@@ -233,62 +230,86 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <div className="lg:hidden mt-4 pb-4 space-y-2 border-t border-gray-700 pt-4">
-              <Link
-                href="/dashboard/teacher/materials"
-                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Materials
-              </Link>
-              <Link
-                href="/dashboard/teacher/quizzes"
-                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Quizzes
-              </Link>
-              <Link
-                href="/dashboard/teacher/assignments"
-                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Assignments
-              </Link>
-              <Link
-                href="/dashboard/teacher/grading"
-                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Grading
-              </Link>
-              <Link
-                href="/dashboard/teacher/integrations"
-                className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Integrations
-              </Link>
-              <div className="flex items-center gap-2 px-4 py-2">
-                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                  {user?.name?.charAt(0).toUpperCase() || 'T'}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-100">{user?.name || 'Teacher'}</p>
-                  <p className="text-xs text-gray-400 capitalize">{user?.role || 'teacher'}</p>
-                </div>
-              </div>
-              <Button
-                onClick={logout}
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
-              >
-                <LogOut className="h-5 w-5 mr-2" />
-                Logout
-              </Button>
-            </div>
-          )}
-        </div>
+ {mobileMenuOpen && (
+  <div className="lg:hidden mt-4 pb-4 space-y-2 border-t border-gray-700 pt-4">
+    <Link
+      href="/dashboard/teacher/materials"
+      className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+      onClick={() => setMobileMenuOpen(false)}
+    >
+      Materials
+    </Link>
+    <Link
+      href="/dashboard/teacher/quizzes"
+      className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+      onClick={() => setMobileMenuOpen(false)}
+    >
+      Quizzes
+    </Link>
+    <Link
+      href="/dashboard/teacher/assignments"
+      className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+      onClick={() => setMobileMenuOpen(false)}
+    >
+      Assignments
+    </Link>
+    <Link
+      href="/dashboard/teacher/grading"
+      className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+      onClick={() => setMobileMenuOpen(false)}
+    >
+      Grading
+    </Link>
+    <Link
+      href="/dashboard/teacher/integrations"
+      className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+      onClick={() => setMobileMenuOpen(false)}
+    >
+      Integrations
+    </Link>
+
+    {/* 🔌 Online/Offline + Sync Indicator - Mobile */}
+    <div className="px-4 py-2 space-y-1 border-t border-gray-800 mt-2 pt-2">
+      <div className="flex items-center gap-2">
+        {isOnline ? (
+          <>
+            <Wifi className="h-4 w-4 text-green-600" />
+            <span className="text-sm text-green-400">Online</span>
+          </>
+        ) : (
+          <>
+            <WifiOff className="h-4 w-4 text-orange-600" />
+            <span className="text-sm text-orange-400">Offline</span>
+          </>
+        )}
+      </div>
+
+      {/* Subtle Animated Sync Indicator */}
+      <div className="mt-1">
+        <SyncIndicator />
+      </div>
+    </div>
+
+    {/* 👤 User Info - Mobile */}
+    <div className="flex items-center gap-2 px-4 py-2">
+      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+        {user?.name?.charAt(0).toUpperCase() || 'T'}
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-100">{user?.name || 'Teacher'}</p>
+        <p className="text-xs text-gray-400 capitalize">{user?.role || 'teacher'}</p>
+      </div>
+    </div>
+
+    <Button
+      onClick={logout}
+      className="w-full bg-red-600 hover:bg-red-700 text-white"
+    >
+      <LogOut className="h-5 w-5 mr-2" />
+      Logout
+    </Button>
+  </div>
+)}
       </header>
 
       {/* Main Content */}

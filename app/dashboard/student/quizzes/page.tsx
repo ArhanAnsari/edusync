@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Clock, Award, CheckCircle, XCircle, Play, Send } from 'lucide-react';
 import { isOnline, handleOfflineSave } from '@/lib/offline-sync';
 import { toast } from 'sonner';
+import { saveQuizProgress, loadQuizProgress, clearQuizProgress } from '@/lib/offline-progress';
 
 interface Question {
   id: string;
@@ -100,6 +101,18 @@ export default function StudentQuizzesPage() {
     return () => clearInterval(timer);
   }, [activeQuiz, submitting]);
 
+  useEffect(() => {
+  if (!activeQuiz || !user) return;
+  const interval = setInterval(() => {
+    saveQuizProgress(user.$id, activeQuiz.quizId, {
+      answers,
+      timeLeft,
+      updatedAt: new Date().toISOString(),
+    });
+  }, 8000); // every 8 seconds
+  return () => clearInterval(interval);
+}, [answers, timeLeft, user, activeQuiz]);
+
   const fetchQuizzes = async () => {
     try {
       const response = await databases.listDocuments(
@@ -131,14 +144,24 @@ export default function StudentQuizzesPage() {
     }
   };
 
-  const startQuiz = (quiz: Quiz) => {
-    const parsedQuestions = JSON.parse(quiz.questions || '[]');
-    setActiveQuiz(quiz);
-    setQuestions(parsedQuestions);
-    setTimeLeft(quiz.timeLimit * 60); // Convert to seconds
-    setAnswers({});
-    setCurrentAttemptId(ID.unique()); // Generate attempt ID once at start
-  };
+  const startQuiz = async (quiz: Quiz) => {
+  const parsedQuestions = JSON.parse(quiz.questions || '[]');
+  setActiveQuiz(quiz);
+  setQuestions(parsedQuestions);
+  setTimeLeft(quiz.timeLimit * 60);
+  setAnswers({});
+  setCurrentAttemptId(ID.unique());
+
+  if (user) {
+    const saved = await loadQuizProgress(user.$id, quiz.quizId);
+    if (saved) {
+      if (confirm('Restore your previous progress?')) {
+        setAnswers(saved.answers || {});
+        setTimeLeft(saved.timeLeft || quiz.timeLimit * 60);
+      }
+    }
+  }
+};
 
   const selectAnswer = (questionId: string, optionIndex: number) => {
     setAnswers({ ...answers, [questionId]: optionIndex });
@@ -174,25 +197,32 @@ export default function StudentQuizzesPage() {
     };
 
     if (!isOnline()) {
-      await handleOfflineSave('quizAttempts', attemptData);
-      toast.info('You are offline — attempt saved locally!', {
-        description: 'It will sync automatically when you’re back online.',
-      });
-    } else {
-      await fetch('/api/sync/quizAttempts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(attemptData),
-      });
-      toast.success(`Quiz submitted! Score: ${score}%`);
-    }
+  await handleOfflineSave('quizAttempts', attemptData);
+  toast.info('You are offline — attempt saved locally!', {
+    description: 'It will sync automatically when you’re back online.',
+  });
+} else {
+  await fetch('/api/sync/quizAttempts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(attemptData),
+  });
+  toast.success(`Quiz submitted! Score: ${score}%`);
+}
 
-    setActiveQuiz(null);
-    setQuestions([]);
-    setAnswers({});
-    setTimeLeft(0);
-    setCurrentAttemptId(null);
-    fetchAttempts();
+ // ✅ Clear saved offline progress for this quiz
+ try {
+  await clearQuizProgress(user.$id, activeQuiz.quizId);
+} catch (err) {
+  console.warn('Failed to clear local progress:', err);
+}
+
+ setActiveQuiz(null);
+ setQuestions([]);
+ setAnswers({});
+ setTimeLeft(0);
+ setCurrentAttemptId(null);
+ fetchAttempts();
   } catch (error: any) {
     console.error('Error submitting quiz:', error);
     toast.error('Failed to submit quiz', { description: error.message });

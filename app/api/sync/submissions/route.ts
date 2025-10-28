@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { databases } from '@/lib/appwrite';
+import { databases, config } from '@/lib/appwrite';
 import { ID, Permission, Role } from 'appwrite';
 import { getUser } from '@/lib/auth';
-import { config } from '@/lib/appwrite';
 
 export async function POST(req: Request) {
   try {
@@ -14,10 +13,23 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { assignmentId, studentId, content, fileUrl, submittedAt } = body;
 
-    if (studentId !== user.$id) {
-      return NextResponse.json({ error: 'Unauthorized student ID' }, { status: 403 });
+    // 🧩 Validate incoming payload
+    if (!assignmentId || !studentId || !content || !submittedAt) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
     }
 
+    // 🧠 Prevent tampering with student ID
+    if (studentId !== user.$id) {
+      return NextResponse.json(
+        { error: 'Unauthorized student ID' },
+        { status: 403 }
+      );
+    }
+
+    // 🗂️ Create submission document
     await databases.createDocument(
       config.databaseId,
       config.collections.submissions,
@@ -26,23 +38,26 @@ export async function POST(req: Request) {
         assignmentId,
         studentId,
         content,
-        fileUrl,
+        fileUrl: fileUrl || null,
         submittedAt,
         syncedAt: new Date().toISOString(),
       },
       [
-        // ✅ Permissions configuration
-        Permission.read(Role.user(studentId)),          // student can read their own submission
-        Permission.update(Role.user(studentId)),        // student can update (optional)
-        Permission.delete(Role.user(studentId)),        // student can delete (optional)
-        Permission.read(Role.role('teacher')),          // all teachers can read for grading
-        Permission.update(Role.role('teacher')),        // teachers can update grades
+        // ✅ Fine-grained permissions
+        Permission.read(Role.user(studentId)),   // student can read
+        Permission.update(Role.user(studentId)), // optional (edit before graded)
+        Permission.delete(Role.user(studentId)), // optional (withdraw submission)
+        Permission.read(Role.role('teacher')),   // teachers can read for grading
+        Permission.update(Role.role('teacher')), // teachers can update grades
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('[SYNC API] Submissions error:', error);
-    return NextResponse.json({ error: error.message || 'Sync failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || 'Submission sync failed' },
+      { status: 500 }
+    );
   }
 }

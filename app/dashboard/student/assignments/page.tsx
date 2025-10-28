@@ -6,12 +6,19 @@ import { useRouter } from 'next/navigation';
 import { databases, config, ID, Permission, Role, Query } from '@/lib/appwrite';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Calendar, AlertCircle, Send, CheckCircle, Clock } from 'lucide-react';
+import {
+  BookOpen,
+  Calendar,
+  AlertCircle,
+  Send,
+  CheckCircle,
+  Clock,
+} from 'lucide-react';
 import { isOnline, handleOfflineSave } from '@/lib/offline-sync';
 import { toast } from 'sonner';
+import { saveDraft, loadDraft, clearDraft } from '@/lib/offline-drafts';
 import Footer from '@/components/Footer';
 
 interface Assignment {
@@ -44,7 +51,9 @@ export default function StudentAssignmentsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [activeAssignment, setActiveAssignment] = useState<Assignment | null>(null);
+  const [activeAssignment, setActiveAssignment] = useState<Assignment | null>(
+    null
+  );
   const [submissionContent, setSubmissionContent] = useState('');
 
   useEffect(() => {
@@ -55,15 +64,28 @@ export default function StudentAssignmentsPage() {
     fetchData();
   }, [user, router]);
 
+  // 🧩 Auto-save draft every 8 seconds
+  useEffect(() => {
+    if (!user || !activeAssignment) return;
+
+    const interval = setInterval(() => {
+      if (submissionContent.trim()) {
+        saveDraft(user.$id, activeAssignment.assignmentId, submissionContent);
+        console.log('💾 Draft auto-saved for', activeAssignment.assignmentId);
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [user, activeAssignment, submissionContent]);
+
   const fetchData = async () => {
     try {
       const [assignmentsRes, submissionsRes] = await Promise.all([
-  databases.listDocuments(config.databaseId, config.collections.assignments),
-  databases.listDocuments(config.databaseId, config.collections.submissions, [
-    // ✅ Filter so only this student’s submissions are fetched
-    Query.equal('studentId', user.$id)
-  ]),
-]);
+        databases.listDocuments(config.databaseId, config.collections.assignments),
+        databases.listDocuments(config.databaseId, config.collections.submissions, [
+          Query.equal('studentId', user.$id),
+        ]),
+      ]);
       setAssignments(assignmentsRes.documents as unknown as Assignment[]);
       setSubmissions(submissionsRes.documents as unknown as Submission[]);
     } catch (error) {
@@ -74,52 +96,57 @@ export default function StudentAssignmentsPage() {
   };
 
   const getSubmission = (assignmentId: string) => {
-    return submissions.find((s) => s.assignmentId === assignmentId && s.userId === user?.$id);
+    return submissions.find(
+      (s) => s.assignmentId === assignmentId && s.userId === user?.$id
+    );
   };
 
-const submitAssignment = async () => {
-  if (!user || !activeAssignment || !submissionContent.trim()) {
-    toast.error('Please enter your submission content');
-    return;
-  }
-
-  setSubmitting(true);
-  const submissionId = ID.unique();
-
-  const submissionData = {
-    id: submissionId,
-    assignmentId: activeAssignment.assignmentId,
-    studentId: user.$id,
-    content: submissionContent,
-    submittedAt: new Date().toISOString(),
-    syncStatus: isOnline() ? 'synced' : 'pending',
-  };
-
-  try {
-    if (!isOnline()) {
-      await handleOfflineSave('submissions', submissionData);
-      toast.info('Offline submission saved locally!', {
-        description: 'It will sync automatically when you’re back online.',
-      });
-    } else {
-      await fetch('/api/sync/submissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionData),
-      });
-      toast.success('Assignment submitted successfully!');
+  const submitAssignment = async () => {
+    if (!user || !activeAssignment || !submissionContent.trim()) {
+      toast.error('Please enter your submission content');
+      return;
     }
 
-    setActiveAssignment(null);
-    setSubmissionContent('');
-    fetchData();
-  } catch (error: any) {
-    console.error('Error submitting assignment:', error);
-    toast.error('Submission failed', { description: error.message });
-  } finally {
-    setSubmitting(false);
-  }
-};
+    setSubmitting(true);
+    const submissionId = ID.unique();
+
+    const submissionData = {
+      id: submissionId,
+      assignmentId: activeAssignment.assignmentId,
+      studentId: user.$id,
+      content: submissionContent,
+      submittedAt: new Date().toISOString(),
+      syncStatus: isOnline() ? 'synced' : 'pending',
+    };
+
+    try {
+      if (!isOnline()) {
+        await handleOfflineSave('submissions', submissionData);
+        toast.info('Offline submission saved locally!', {
+          description: 'It will sync automatically when you’re back online.',
+        });
+      } else {
+        await fetch('/api/sync/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(submissionData),
+        });
+        toast.success('Assignment submitted successfully!');
+      }
+
+      // ✅ Clear draft after successful submission
+      await clearDraft(user.$id, activeAssignment.assignmentId);
+
+      setActiveAssignment(null);
+      setSubmissionContent('');
+      fetchData();
+    } catch (error: any) {
+      console.error('Error submitting assignment:', error);
+      toast.error('Submission failed', { description: error.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const isOverdue = (dueDate: string) => {
     return new Date(dueDate) < new Date();
@@ -127,7 +154,7 @@ const submitAssignment = async () => {
 
   const getStatusBadge = (assignment: Assignment) => {
     const submission = getSubmission(assignment.assignmentId);
-    
+
     if (submission?.grade !== undefined) {
       return (
         <Badge className="bg-blue-100 text-blue-800">
@@ -136,7 +163,7 @@ const submitAssignment = async () => {
         </Badge>
       );
     }
-    
+
     if (submission) {
       return (
         <Badge className="bg-green-100 text-green-800">
@@ -178,26 +205,38 @@ const submitAssignment = async () => {
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white">Assignments</h1>
-          <p className="text-gray-400 mt-2">View and submit your assignments</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white">
+            Assignments
+          </h1>
+          <p className="text-gray-400 mt-2">
+            View and submit your assignments
+          </p>
         </div>
 
         {/* Submit Modal */}
         {activeAssignment && (
           <Card className="p-6 sm:p-8 bg-gray-800 border-gray-700 shadow-lg border-2 border-blue-500">
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">Submit Assignment</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">
+              Submit Assignment
+            </h2>
 
             <div className="space-y-4 sm:space-y-6">
               <div className="p-4 bg-gray-700 rounded-lg">
-                <h3 className="font-semibold text-white mb-2">{activeAssignment.title}</h3>
-                <p className="text-sm text-gray-400 mb-2">{activeAssignment.description}</p>
+                <h3 className="font-semibold text-white mb-2">
+                  {activeAssignment.title}
+                </h3>
+                <p className="text-sm text-gray-400 mb-2">
+                  {activeAssignment.description}
+                </p>
                 <p className="text-sm text-gray-500">
                   Due: {new Date(activeAssignment.dueDate).toLocaleString()}
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="content" className="text-gray-300">Your Submission *</Label>
+                <Label htmlFor="content" className="text-gray-300">
+                  Your Submission *
+                </Label>
                 <textarea
                   id="content"
                   value={submissionContent}
@@ -206,6 +245,9 @@ const submitAssignment = async () => {
                   className="mt-2 w-full px-4 py-2 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={10}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  💾 Auto-saves every 8s
+                </p>
               </div>
 
               <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-700">
@@ -235,13 +277,18 @@ const submitAssignment = async () => {
             const overdue = isOverdue(assignment.dueDate);
 
             return (
-              <Card key={assignment.$id} className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg hover:shadow-xl transition-shadow">
+              <Card
+                key={assignment.$id}
+                className="p-4 sm:p-6 bg-gray-800 border-gray-700 shadow-lg hover:shadow-xl transition-shadow"
+              >
                 <div className="flex items-start justify-between mb-4">
                   <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
                   {getStatusBadge(assignment)}
                 </div>
 
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{assignment.title}</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                  {assignment.title}
+                </h3>
                 <p className="text-sm sm:text-base text-gray-400 mb-4 line-clamp-3">
                   {assignment.description}
                 </p>
@@ -249,7 +296,13 @@ const submitAssignment = async () => {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className={overdue && !submission ? 'text-red-400 font-semibold' : 'text-gray-400'}>
+                    <span
+                      className={
+                        overdue && !submission
+                          ? 'text-red-400 font-semibold'
+                          : 'text-gray-400'
+                      }
+                    >
                       Due: {new Date(assignment.dueDate).toLocaleDateString()}
                     </span>
                   </div>
@@ -258,7 +311,8 @@ const submitAssignment = async () => {
                 {submission ? (
                   <div className="space-y-2">
                     <p className="text-sm text-gray-400">
-                      Submitted: {new Date(submission.submittedAt).toLocaleDateString()}
+                      Submitted:{' '}
+                      {new Date(submission.submittedAt).toLocaleDateString()}
                     </p>
                     {submission.grade !== undefined && (
                       <div>
@@ -267,8 +321,12 @@ const submitAssignment = async () => {
                         </p>
                         {submission.feedback && (
                           <div className="mt-2 p-3 bg-blue-600/20 border border-blue-500/30 rounded-lg">
-                            <p className="text-sm font-semibold text-blue-400 mb-1">Feedback:</p>
-                            <p className="text-sm text-gray-300">{submission.feedback}</p>
+                            <p className="text-sm font-semibold text-blue-400 mb-1">
+                              Feedback:
+                            </p>
+                            <p className="text-sm text-gray-300">
+                              {submission.feedback}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -276,7 +334,25 @@ const submitAssignment = async () => {
                   </div>
                 ) : (
                   <Button
-                    onClick={() => setActiveAssignment(assignment)}
+                    onClick={async () => {
+                      setActiveAssignment(assignment);
+
+                      if (user) {
+                        const saved = await loadDraft(
+                          user.$id,
+                          assignment.assignmentId
+                        );
+                        if (saved?.content) {
+                          const confirmRestore = confirm(
+                            'You have an unsaved draft. Restore it?'
+                          );
+                          if (confirmRestore) {
+                            setSubmissionContent(saved.content);
+                            toast.info('Draft restored from local storage!');
+                          }
+                        }
+                      }
+                    }}
                     disabled={overdue}
                     className={`w-full ${
                       overdue
@@ -295,8 +371,12 @@ const submitAssignment = async () => {
           {assignments.length === 0 && (
             <div className="col-span-full text-center py-12">
               <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No assignments yet</h3>
-              <p className="text-sm sm:text-base text-gray-400">Check back later for new assignments from your teachers</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
+                No assignments yet
+              </h3>
+              <p className="text-sm sm:text-base text-gray-400">
+                Check back later for new assignments from your teachers
+              </p>
             </div>
           )}
         </div>
