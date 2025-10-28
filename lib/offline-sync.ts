@@ -103,36 +103,31 @@ export async function handleOfflineSave<T extends keyof EduSyncDB>(
 export async function syncPendingData() {
   if (!isOnline()) return;
 
-  toast.message('Syncing offline data...', {
-    description: 'Please wait while we update your data.',
-  });
-
   const stores: (keyof EduSyncDB)[] = ['quizAttempts', 'submissions'];
 
-  for (const store of stores) {
-    const pendingItems = await getPendingSyncItems(store);
+  for (const storeName of stores) {
+    const pendingItems = await getPendingSyncItems(storeName);
 
     for (const item of pendingItems) {
       try {
-        const response = await fetch(`/api/sync/${store}`, {
+        const type = storeName === 'quizAttempts' ? 'quizAttempt' : 'submission';
+
+        const res = await fetch('/api/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item),
+          body: JSON.stringify({ type, data: item }),
         });
 
-        if (response.ok) {
-          await updateSyncStatus(store, item.id, 'synced');
-          toast.success(`✅ Synced ${store} successfully.`);
+        if (res.ok) {
+          await saveToOfflineDB(storeName, { ...item, syncStatus: 'synced' });
         } else {
-          throw new Error('Failed to sync.');
+          console.error(`Failed to sync ${storeName}:`, await res.text());
         }
-      } catch (err) {
-        console.error(`[SYNC] Failed for ${store}:`, err);
+      } catch (error) {
+        console.error(`Error syncing ${storeName}:`, error);
       }
     }
   }
-
-  toast.success('✅ All offline data synced!');
 }
 
 // ------------------ ONLINE LISTENER ------------------
