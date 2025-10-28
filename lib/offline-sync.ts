@@ -1,7 +1,10 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { toast } from 'sonner';
 
+// ------------------ DATABASE SCHEMA ------------------
+
 interface EduSyncDB extends DBSchema {
+  // 🧑‍🎓 Student-side stores
   quizAttempts: {
     key: string;
     value: {
@@ -28,21 +31,94 @@ interface EduSyncDB extends DBSchema {
     };
     indexes: { 'by-sync': 'syncStatus' };
   };
+
+  // 🧑‍🏫 Teacher-side stores
+  assignments: {
+    key: string;
+    value: {
+      id: string;
+      title: string;
+      description: string;
+      dueDate: string;
+      createdBy: string;
+      createdAt: string;
+      syncStatus: 'synced' | 'pending' | 'offline';
+    };
+    indexes: { 'by-sync': 'syncStatus' };
+  };
+  quizzes: {
+    key: string;
+    value: {
+      id: string;
+      title: string;
+      questions: any[];
+      createdBy: string;
+      createdAt: string;
+      syncStatus: 'synced' | 'pending' | 'offline';
+    };
+    indexes: { 'by-sync': 'syncStatus' };
+  };
+  materials: {
+    key: string;
+    value: {
+      id: string;
+      title: string;
+      fileUrl: string;
+      createdBy: string;
+      createdAt: string;
+      syncStatus: 'synced' | 'pending' | 'offline';
+    };
+    indexes: { 'by-sync': 'syncStatus' };
+  };
+  grading: {
+    key: string;
+    value: {
+      id: string;
+      submissionId: string;
+      grade: number;
+      feedback?: string;
+      gradedBy: string;
+      gradedAt: string;
+      syncStatus: 'synced' | 'pending' | 'offline';
+    };
+    indexes: { 'by-sync': 'syncStatus' };
+  };
 }
 
 let dbInstance: IDBPDatabase<EduSyncDB> | null = null;
 
+// ------------------ INIT DB ------------------
+
 export async function initDB(): Promise<IDBPDatabase<EduSyncDB>> {
   if (dbInstance) return dbInstance;
 
-  dbInstance = await openDB<EduSyncDB>('edusync-db', 1, {
-    upgrade(db) {
+  dbInstance = await openDB<EduSyncDB>('edusync-db', 2, {
+    upgrade(db, oldVersion) {
+      // Student stores
       if (!db.objectStoreNames.contains('quizAttempts')) {
         const store = db.createObjectStore('quizAttempts', { keyPath: 'id' });
         store.createIndex('by-sync', 'syncStatus');
       }
       if (!db.objectStoreNames.contains('submissions')) {
         const store = db.createObjectStore('submissions', { keyPath: 'id' });
+        store.createIndex('by-sync', 'syncStatus');
+      }
+
+      // Teacher stores
+      if (!db.objectStoreNames.contains('assignments')) {
+        const store = db.createObjectStore('assignments', { keyPath: 'id' });
+        store.createIndex('by-sync', 'syncStatus');
+      }
+      if (!db.objectStoreNames.contains('quizzes')) {
+        const store = db.createObjectStore('quizzes', { keyPath: 'id' });
+        store.createIndex('by-sync', 'syncStatus');
+      }
+      if (!db.objectStoreNames.contains('materials')) {
+        const store = db.createObjectStore('materials', { keyPath: 'id' });
+        store.createIndex('by-sync', 'syncStatus');
+      }
+      if (!db.objectStoreNames.contains('grading')) {
+        const store = db.createObjectStore('grading', { keyPath: 'id' });
         store.createIndex('by-sync', 'syncStatus');
       }
     },
@@ -103,11 +179,21 @@ export async function handleOfflineSave<T extends keyof EduSyncDB>(
 export async function syncPendingData() {
   if (!isOnline()) return;
 
-  const stores: (keyof EduSyncDB)[] = ['quizAttempts', 'submissions'];
+  const stores: (keyof EduSyncDB)[] = [
+    // Student
+    'quizAttempts',
+    'submissions',
+    // Teacher
+    'assignments',
+    'quizzes',
+    'materials',
+    'grading',
+  ];
+
   let totalSynced = 0;
   let totalFailed = 0;
 
-  // 🔔 Dispatch a global sync start event
+  // 🟢 Start sync indicator event
   window.dispatchEvent(new CustomEvent('sync-start'));
 
   for (const storeName of stores) {
@@ -115,9 +201,8 @@ export async function syncPendingData() {
 
     for (const item of pendingItems) {
       try {
-        const type = storeName === 'quizAttempts' ? 'quizAttempt' : 'submission';
-
-        const res = await fetch(`/api/sync/${storeName}`, {
+        const apiRoute = `/api/sync/${storeName}`;
+        const res = await fetch(apiRoute, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(item),
@@ -137,14 +222,13 @@ export async function syncPendingData() {
     }
   }
 
-  // 🟢 Dispatch sync complete event
+  // 🔵 Complete sync indicator event
   window.dispatchEvent(
     new CustomEvent('sync-complete', {
       detail: { success: totalSynced, failed: totalFailed },
     })
   );
 
-  // Optional toast notifications
   if (totalSynced > 0) {
     toast.success(`✅ ${totalSynced} items synced successfully.`);
   }
