@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { databases, config, ID, Permission, Role } from '@/lib/appwrite';
+import { databases, config, ID, Permission, Role, Query } from '@/lib/appwrite';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -58,10 +58,12 @@ export default function StudentAssignmentsPage() {
   const fetchData = async () => {
     try {
       const [assignmentsRes, submissionsRes] = await Promise.all([
-        databases.listDocuments(config.databaseId, config.collections.assignments),
-        databases.listDocuments(config.databaseId, config.collections.submissions),
-      ]);
-
+  databases.listDocuments(config.databaseId, config.collections.assignments),
+  databases.listDocuments(config.databaseId, config.collections.submissions, [
+    // ✅ Filter so only this student’s submissions are fetched
+    Query.equal('studentId', user.$id)
+  ]),
+]);
       setAssignments(assignmentsRes.documents as unknown as Assignment[]);
       setSubmissions(submissionsRes.documents as unknown as Submission[]);
     } catch (error) {
