@@ -94,6 +94,36 @@ export async function getCurrentUser(): Promise<User> {
   }
 }
 
+// ✅ Server-safe getUser for API routes
+export async function getUser() {
+  try {
+    // Appwrite's server SDK: get current session user
+    const accountData = await account.get();
+
+    // Get full profile
+    const userProfile = await databases.getDocument(
+      config.databaseId,
+      config.collections.users,
+      accountData.$id
+    );
+
+    const fullName = [userProfile.firstName, userProfile.lastName]
+      .filter(Boolean)
+      .join(' ') || accountData.name;
+
+    return {
+      $id: userProfile.$id,
+      name: fullName,
+      email: userProfile.email || accountData.email,
+      role: userProfile.role,
+      avatar: userProfile.avatar,
+      createdAt: userProfile.createdAt,
+    };
+  } catch {
+    return null; // return null instead of throwing (so API routes can handle unauthorized)
+  }
+}
+
 export async function loginWithGitHub(): Promise<void> {
   try {
     const appUrl = getBaseUrl();
