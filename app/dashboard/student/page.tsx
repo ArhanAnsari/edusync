@@ -297,18 +297,18 @@ export default function StudentDashboard() {
               {/* Online/Offline + Sync Indicator - Mobile */}
         <div className="px-4 py-2 space-y-1">
            <div className="flex items-center gap-2">
-           isOnline ? (
-         <>
-        <Wifi className="h-4 w-4 text-green-600" />
-        <span className="text-sm text-green-400">Online</span>
-      </>
-    ) : (
-      <>
-        <WifiOff className="h-4 w-4 text-orange-600" />
-        <span className="text-sm text-orange-400">Offline</span>
-      </>
-    )}
-  </div>
+  {isOnline ? (
+    <>
+      <Wifi className="h-4 w-4 text-green-600" />
+      <span className="text-sm text-green-400">Online</span>
+    </>
+  ) : (
+    <>
+      <WifiOff className="h-4 w-4 text-orange-600" />
+      <span className="text-sm text-orange-400">Offline</span>
+    </>
+  )}
+</div>
 
   {/* Subtle sync indicator */}
   <SyncIndicator />
