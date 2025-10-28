@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server';
-import { databases } from '@/lib/appwrite'; // your existing Appwrite client
+import { databases } from '@/lib/appwrite';
 import { ID } from 'appwrite';
 import { getUser } from '@/lib/auth';
 
-const user = await getUser();
-if (!user) {
-  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-}
-
 export async function POST(req: Request) {
   try {
+    // ✅ Move user check inside the POST handler
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
 
-    // Validate request structure
+    // Validate payload
     if (!body || !body.type || !body.data) {
       return NextResponse.json({ error: 'Invalid sync payload' }, { status: 400 });
     }
@@ -22,6 +23,11 @@ export async function POST(req: Request) {
     switch (type) {
       case 'quizAttempt': {
         const { quizId, studentId, answers, score, completedAt } = data;
+
+        // Extra safety: prevent spoofing another user's data
+        if (studentId !== user.$id) {
+          return NextResponse.json({ error: 'Unauthorized student ID' }, { status: 403 });
+        }
 
         await databases.createDocument(
           process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
@@ -41,6 +47,10 @@ export async function POST(req: Request) {
 
       case 'submission': {
         const { assignmentId, studentId, content, fileUrl, submittedAt } = data;
+
+        if (studentId !== user.$id) {
+          return NextResponse.json({ error: 'Unauthorized student ID' }, { status: 403 });
+        }
 
         await databases.createDocument(
           process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
