@@ -42,17 +42,12 @@ export default function StudentDashboard() {
     }
 
     // Network status monitoring
-    const handleOnline = () => {
+    const handleOnline = async () => {
       setIsOnline(true);
       toast.success('Back Online! Syncing pending data...');
-      syncPendingData(async (item) => {
-        await fetch('/api/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item),
-       });
-   });
-};
+      await syncPendingData();
+    };
+
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
