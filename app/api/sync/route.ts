@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { databases } from '@/lib/appwrite'; // your existing Appwrite client
 import { ID } from 'appwrite';
+import { getUser } from '@/lib/auth';
+
+const user = await getUser();
+if (!user) {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+}
 
 export async function POST(req: Request) {
   try {
