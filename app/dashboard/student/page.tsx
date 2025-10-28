@@ -330,7 +330,6 @@ export default function StudentDashboard() {
               </Button>
             </div>
           )}
-        </div>
       </header>
     
       {/* Main Content */}
