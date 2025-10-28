@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
 import { AIChatbot } from '@/components/ai/ChatBot';
+import { syncPendingData } from '@/lib/offline-sync';
+import { toast } from 'sonner';
 
 export default function StudentDashboard() {
   const { user, logout, loading } = useAuth();
@@ -39,7 +41,17 @@ export default function StudentDashboard() {
     }
 
     // Network status monitoring
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('Back Online! Syncing pending data...');
+      syncPendingData(async (item) => {
+        await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item),
+       });
+   });
+};
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
