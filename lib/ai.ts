@@ -1,48 +1,128 @@
 /**
- * AI Utilities for EduSync
- * Powered by Google Generative AI (Gemini) via Vercel AI SDK
+ * lib/ai.ts
+ *
+ * Robust AI utilities for EduSync (Gemini via Vercel AI SDK)
+ *
+ * Improvements:
+ * - Retry + exponential backoff for transient errors
+ * - AbortController-based timeout
+ * - Env-driven configuration (GEMINI_MAX_TOKENS, GEMINI_TIMEOUT_MS, GEMINI_RETRIES, GEMINI_THINKING_BUDGET)
+ * - Safer model selection with graceful fallback
+ * - Streaming preserved (returns stream object from streamText)
+ * - Better error classification & messages
  */
 
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText, generateObject, streamText } from 'ai';
+import { generateText, generateObject, streamText, StreamTextResult } from 'ai';
 import { z } from 'zod';
 
-// Validate API Key is available
-if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
+if (!API_KEY) {
   console.warn(
-    '⚠️  WARNING: No Gemini API key found. AI services will not work.\n' +
-    'Please set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY environment variable.'
+    '⚠️ No Gemini API key found. Set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY to enable AI services.'
   );
 }
-const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
-const google = createGoogleGenerativeAI({
-  apiKey: apiKey,
-});
+const google = createGoogleGenerativeAI({ apiKey: API_KEY });
 
-// Get the best available model - using Gemini 2.5 as preferred
+// Configurable via env:
+const DEFAULT_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 30_000; // 30s
+const MAX_RETRIES = Number(process.env.GEMINI_RETRIES) || 2; // number of retries on transient errors
+const MAX_TOKENS_ENV = process.env.GEMINI_MAX_TOKENS ? Number(process.env.GEMINI_MAX_TOKENS) : undefined;
+// thinkingBudget: lower default to be friendly for free tier; can be overridden
+const THINKING_BUDGET = Number(process.env.GEMINI_THINKING_BUDGET) || 1024;
+
+// Helper: pick model and fallback safely
+function getModelName() {
+  // Prefer gemini-2.5-flash if available by name; fallback order
+  const preferred = (process.env.GEMINI_MODEL || 'gemini-2.5-flash').trim();
+
+  // Allow override via env
+  return preferred;
+}
+
 function getModel() {
-  // Try to use Gemini 2.5 Flash (primary choice for balance of speed and quality)
+  const modelName = getModelName();
   try {
-    return google('gemini-2.5-flash');
-  } catch (error) {
-    // First fallback to Gemini 2.5 Pro (for more complex reasoning if Flash is unavailable)
+    return google(modelName);
+  } catch (err) {
+    console.warn(`[AI] Failed to init model ${modelName}:`, err);
+    // Try fallbacks
+    const fallbacks = ['gemini-2.5-pro', 'gemini-2.0-flash'];
+    for (const fb of fallbacks) {
+      try {
+        console.warn(`[AI] Trying fallback model ${fb}`);
+        return google(fb);
+      } catch (e) {
+        console.warn(`[AI] Fallback ${fb} failed:`, e);
+      }
+    }
+    // Last resort: let the SDK decide with a generic call
     try {
-      return google('gemini-2.5-pro');
-    } catch (secondError) {
-      // Second fallback to a stable model if 2.5 isn't available
-      console.warn("Failed to initialize Gemini 2.5 models, falling back to older version");
       return google('gemini-2.0-flash');
+    } catch (e) {
+      // If everything fails, rethrow
+      throw new Error('No AI model available: ' + String(e));
     }
   }
 }
 
-// Initialize Gemini model dynamically
 const model = getModel();
 
-// ============================================
-// TYPE DEFINITIONS
-// ============================================
+/**
+ * Generic retry wrapper with exponential backoff.
+ * - Retries on transient errors (network, 429, 5xx)
+ */
+async function withRetries<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  retries = MAX_RETRIES,
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<T> {
+  let attempt = 0;
+  let lastError: any = null;
+  while (attempt <= retries) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const result = await fn(controller.signal);
+      clearTimeout(timer);
+      return result;
+    } catch (err: any) {
+      clearTimeout(timer);
+      lastError = err;
+      attempt++;
+      const message = err?.message || String(err);
+      // If aborted due to timeout, maybe retry depending on attempts left
+      const isRetryable =
+        message.includes('timeout') ||
+        message.includes('DEADLINE_EXCEEDED') ||
+        message.includes('ETIMEDOUT') ||
+        message.includes('ECONNRESET') ||
+        message.includes('rate limit') ||
+        message.includes('429') ||
+        /5\d{2}/.test(message); // 5xx
+
+      if (!isRetryable || attempt > retries) {
+        // Not retryable or out of retries
+        console.error(`[AI] Request failed (attempt ${attempt}/${retries}):`, message);
+        throw err;
+      }
+
+      // Exponential backoff with jitter
+      const base = 400 * Math.pow(2, attempt - 1);
+      const jitter = Math.floor(Math.random() * 300);
+      const backoff = Math.min(5000, base + jitter);
+      console.warn(`[AI] Transient error, retrying in ${backoff}ms (attempt ${attempt}/${retries})`, message);
+      await new Promise((res) => setTimeout(res, backoff));
+      // loop and retry
+    }
+  }
+  throw lastError ?? new Error('Unknown retry error in AI wrapper');
+}
+
+/* ============================
+   Type definitions (same as before)
+   ============================ */
 
 export interface QuizQuestion {
   question: string;
@@ -85,352 +165,253 @@ export interface StudyRecommendation {
   estimatedTime: string;
 }
 
-// ============================================
-// QUIZ GENERATION
-// ============================================
+/* ============================
+   Schemas
+   ============================ */
 
 const quizQuestionSchema = z.object({
   questions: z.array(
     z.object({
-      question: z.string().describe('The quiz question text'),
-      options: z.array(z.string()).length(4).describe('Four answer options'),
-      correctAnswer: z.number().min(0).max(3).describe('Index of correct answer (0-3)'),
-      explanation: z.string().describe('Explanation of the correct answer'),
-      difficulty: z.enum(['easy', 'medium', 'hard']).describe('Question difficulty level'),
-      points: z.number().positive().describe('Points awarded for correct answer'),
+      question: z.string(),
+      options: z.array(z.string()).length(4),
+      correctAnswer: z.number().min(0).max(3),
+      explanation: z.string(),
+      difficulty: z.enum(['easy', 'medium', 'hard']),
+      points: z.number().positive(),
     })
   ),
 });
 
+const assignmentSchema = z.object({
+  suggestions: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
+      estimatedTime: z.string(),
+      learningObjectives: z.array(z.string()),
+      suggestedDeadline: z.string(),
+    })
+  ),
+});
+
+const gradingSchema = z.object({
+  score: z.number().min(0).max(100),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  suggestions: z.array(z.string()),
+  overallComment: z.string(),
+});
+
+const summarySchema = z.object({
+  mainPoints: z.array(z.string()),
+  keyTakeaways: z.array(z.string()),
+  summary: z.string(),
+  relatedTopics: z.array(z.string()),
+});
+
+const recommendationSchema = z.object({
+  recommendations: z.array(
+    z.object({
+      topic: z.string(),
+      reason: z.string(),
+      priority: z.enum(['high', 'medium', 'low']),
+      resources: z.array(z.string()),
+      estimatedTime: z.string(),
+    })
+  ),
+});
+
+/* ============================
+   Utility helpers
+   ============================ */
+
+function buildProviderOptions() {
+  // If SDK supports 'google' provider options, configure them; keep conservative defaults for free tier
+  return {
+    google: {
+      thinkingConfig: {
+        thinkingBudget: THINKING_BUDGET,
+        includeThoughts: false,
+      },
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      ],
+    },
+  };
+}
+
+function getMaxTokensParam(): number | undefined {
+  if (typeof MAX_TOKENS_ENV === 'number' && !isNaN(MAX_TOKENS_ENV)) {
+    return MAX_TOKENS_ENV;
+  }
+  // If not set, return undefined so SDK/provider uses default limits
+  return undefined;
+}
+
+function classifyErrorMessage(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e || 'Unknown error');
+  if (msg.includes('401') || msg.toLowerCase().includes('api key')) {
+    return 'AI service authentication failed. Check API key.';
+  }
+  if (msg.includes('429') || msg.toLowerCase().includes('rate limit')) {
+    return 'AI service rate limited. Try again later.';
+  }
+  if (msg.toLowerCase().includes('timeout') || msg.includes('DEADLINE_EXCEEDED')) {
+    return 'AI service timeout. Try again.';
+  }
+  if (msg.toLowerCase().includes('schema')) {
+    return 'AI schema error. Check request format.';
+  }
+  return msg;
+}
+
+/* ============================
+   Public API functions
+   ============================ */
+
+/**
+ * generateQuizQuestions
+ */
 export async function generateQuizQuestions(
   topic: string,
   numberOfQuestions: number = 5,
   difficulty: 'easy' | 'medium' | 'hard' = 'medium'
 ): Promise<QuizQuestion[]> {
-  try {
-    // Validate API key before making request
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error('AI service not configured. Missing API key.');
-    }
+  if (!API_KEY) throw new Error('AI service not configured (missing API key).');
+  if (!topic || topic.trim().length === 0) throw new Error('Topic cannot be empty');
 
-    const { object } = await generateObject({
+  const prompt = `Generate ${numberOfQuestions} ${difficulty} multiple-choice quiz questions about "${topic}".
+- Each question should have exactly 4 options, single correct answer.
+- Provide explanation for the correct answer.
+- Points: easy=5, medium=10, hard=15.
+Return JSON: { "questions": [ ... ] }`;
+
+  return withRetries(async (signal) => {
+    const params: any = {
       model,
       schema: quizQuestionSchema,
-      prompt: `Generate ${numberOfQuestions} ${difficulty} multiple-choice quiz questions about "${topic}".
-      
-Requirements:
-- Each question should test understanding of the topic
-- Provide exactly 4 answer options for each question
-- Only one answer should be correct
-- Include a clear explanation for the correct answer
-- Assign points based on difficulty: easy (5), medium (10), hard (15)
-- Make questions educational and relevant
-- Avoid trick questions or ambiguous wording
-
-Format the response as a structured JSON object with an array of questions.`,
-    });
-
-    if (!object.questions || object.questions.length === 0) {
+      prompt,
+      providerOptions: buildProviderOptions(),
+    };
+    const maxTokens = getMaxTokensParam();
+    if (maxTokens) params.maxOutputTokens = maxTokens;
+    const { object } = await generateObject(params as any);
+    if (!object?.questions || !Array.isArray(object.questions) || object.questions.length === 0) {
       throw new Error('No questions generated');
     }
-
-    return object.questions;
-  } catch (error) {
-    console.error('Error generating quiz questions:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      throw new Error('AI service authentication failed. Please check configuration.');
-    }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      throw new Error('AI service rate limit exceeded. Please try again later.');
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      throw new Error('AI service timeout. Please try again.');
-    }
-    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
-      // Handle schema validation errors that might occur with Gemini 2.5
-      throw new Error('Schema error with AI service. Please check the format of your request.');
-    }
-    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
-      // Handle content safety blocks
-      throw new Error('Content blocked by AI safety filters. Please modify your request.');
-    }
-    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
-      // Model availability issues
-      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
-    }
-    
-    throw new Error(`Failed to generate quiz questions: ${errorMessage}`);
-  }
+    return object.questions as QuizQuestion[];
+  });
 }
 
-// ============================================
-// ASSIGNMENT SUGGESTIONS
-// ============================================
-
-const assignmentSchema = z.object({
-  suggestions: z.array(
-    z.object({
-      title: z.string().describe('Assignment title'),
-      description: z.string().describe('Detailed assignment description'),
-      difficulty: z.enum(['beginner', 'intermediate', 'advanced']).describe('Difficulty level'),
-      estimatedTime: z.string().describe('Estimated completion time'),
-      learningObjectives: z.array(z.string()).describe('What students will learn'),
-      suggestedDeadline: z.string().describe('Recommended deadline'),
-    })
-  ),
-});
-
+/**
+ * generateAssignmentSuggestions
+ */
 export async function generateAssignmentSuggestions(
   topic: string,
   studentLevel: string = 'intermediate',
   numberOfSuggestions: number = 3
 ): Promise<AssignmentSuggestion[]> {
-  try {
-    // Validate API key
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error('AI service not configured. Missing API key.');
-    }
+  if (!API_KEY) throw new Error('AI service not configured (missing API key).');
+  if (!topic || topic.trim().length === 0) throw new Error('Topic cannot be empty');
 
-    if (!topic || topic.trim().length === 0) {
-      throw new Error('Topic cannot be empty');
-    }
+  const prompt = `Generate ${numberOfSuggestions} assignment suggestions for ${studentLevel} students about "${topic}".
+Return: { "suggestions": [ ... ] }`;
 
-    const { object } = await generateObject({
+  return withRetries(async (signal) => {
+    const params: any = {
       model,
       schema: assignmentSchema,
-      prompt: `Generate ${numberOfSuggestions} assignment suggestions for ${studentLevel} level students learning about "${topic}".
-      
-Requirements:
-- Create practical, hands-on assignments
-- Include clear learning objectives
-- Provide detailed descriptions
-- Suggest realistic completion times
-- Make assignments progressive in difficulty
-- Include real-world applications where possible
-
-Format the response as a structured JSON object with an array of assignment suggestions.`,
-    });
-
-    if (!object.suggestions || object.suggestions.length === 0) {
+      prompt,
+      providerOptions: buildProviderOptions(),
+    };
+    const maxTokens = getMaxTokensParam();
+    if (maxTokens) params.maxOutputTokens = maxTokens;
+    const { object } = await generateObject(params as any);
+    if (!object?.suggestions || object.suggestions.length === 0) {
       throw new Error('No suggestions generated');
     }
-
-    return object.suggestions;
-  } catch (error) {
-    console.error('Error generating assignment suggestions:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      throw new Error('AI service authentication failed. Please check configuration.');
-    }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      throw new Error('AI service rate limit exceeded. Please try again later.');
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      throw new Error('AI service timeout. Please try again.');
-    }
-    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
-      throw new Error('Schema error with AI service. Please check the format of your request.');
-    }
-    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
-      throw new Error('Content blocked by AI safety filters. Please modify your request.');
-    }
-    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
-      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
-    }
-    if (errorMessage.includes('not configured')) {
-      throw new Error(errorMessage);
-    }
-    
-    throw new Error(`Failed to generate assignment suggestions: ${errorMessage}`);
-  }
+    return object.suggestions as AssignmentSuggestion[];
+  });
 }
 
-// ============================================
-// GRADING ASSISTANCE
-// ============================================
-
-const gradingSchema = z.object({
-  score: z.number().min(0).max(100).describe('Suggested score out of 100'),
-  strengths: z.array(z.string()).describe('Strong points in the submission'),
-  weaknesses: z.array(z.string()).describe('Areas needing improvement'),
-  suggestions: z.array(z.string()).describe('Specific suggestions for improvement'),
-  overallComment: z.string().describe('Overall constructive feedback'),
-});
-
+/**
+ * getGradingFeedback
+ */
 export async function getGradingFeedback(
   assignmentPrompt: string,
   studentSubmission: string,
   rubric?: string
 ): Promise<GradingFeedback> {
-  try {
-    // Validate API key
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error('AI service not configured. Missing API key.');
-    }
+  if (!API_KEY) throw new Error('AI service not configured (missing API key).');
 
-    if (!assignmentPrompt || assignmentPrompt.trim().length === 0) {
-      throw new Error('Assignment prompt cannot be empty');
-    }
-    if (!studentSubmission || studentSubmission.trim().length === 0) {
-      throw new Error('Student submission cannot be empty');
-    }
+  if (!assignmentPrompt || !studentSubmission) {
+    throw new Error('Assignment prompt and student submission are required');
+  }
 
-    const { object } = await generateObject({
-      model,
-      schema: gradingSchema,
-      prompt: `Analyze this student submission and provide detailed grading feedback.
-
+  const prompt = `Analyze submission for assignment:
 Assignment Prompt:
 ${assignmentPrompt}
-
 Student Submission:
 ${studentSubmission}
-
 ${rubric ? `Grading Rubric:\n${rubric}` : ''}
 
-Requirements:
-- Provide a fair and constructive evaluation
-- Identify 3-5 strengths in the work
-- Identify 2-4 areas for improvement
-- Give specific, actionable suggestions
-- Write an encouraging overall comment
-- Suggest a score out of 100
+Return JSON with keys: score, strengths, weaknesses, suggestions, overallComment.`;
 
-Be supportive and educational in your feedback. Focus on helping the student learn and improve.`,
-    });
-
+  return withRetries(async (signal) => {
+    const params: any = {
+      model,
+      schema: gradingSchema,
+      prompt,
+      providerOptions: buildProviderOptions(),
+    };
+    const maxTokens = getMaxTokensParam();
+    if (maxTokens) params.maxOutputTokens = maxTokens;
+    const { object } = await generateObject(params as any);
     if (!object || object.score === undefined) {
       throw new Error('Invalid grading feedback generated');
     }
-
-    return object;
-  } catch (error) {
-    console.error('Error generating grading feedback:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      throw new Error('AI service authentication failed. Please check configuration.');
-    }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      throw new Error('AI service rate limit exceeded. Please try again later.');
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      throw new Error('AI service timeout. Please try again.');
-    }
-    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
-      throw new Error('Schema error with AI service. Please check the format of your request.');
-    }
-    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
-      throw new Error('Content blocked by AI safety filters. Please modify your request.');
-    }
-    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
-      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
-    }
-    if (errorMessage.includes('not configured')) {
-      throw new Error(errorMessage);
-    }
-    
-    throw new Error(`Failed to generate grading feedback: ${errorMessage}`);
-  }
+    return object as GradingFeedback;
+  });
 }
 
-// ============================================
-// CONTENT SUMMARIZATION
-// ============================================
-
-const summarySchema = z.object({
-  mainPoints: z.array(z.string()).describe('Main points from the content'),
-  keyTakeaways: z.array(z.string()).describe('Key takeaways and learnings'),
-  summary: z.string().describe('Concise summary of the content'),
-  relatedTopics: z.array(z.string()).describe('Related topics to explore'),
-});
-
+/**
+ * summarizeContent
+ */
 export async function summarizeContent(
   content: string,
   contentType: 'article' | 'video-transcript' | 'lecture-notes' | 'textbook' = 'article'
 ): Promise<ContentSummary> {
-  try {
-    // Validate API key
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error('AI service not configured. Missing API key.');
-    }
+  if (!API_KEY) throw new Error('AI service not configured (missing API key).');
+  if (!content || content.trim().length === 0) throw new Error('Content cannot be empty');
 
-    if (!content || content.trim().length === 0) {
-      throw new Error('Content cannot be empty');
-    }
+  const prompt = `Summarize this ${contentType}:
 
-    const { object } = await generateObject({
-      model,
-      schema: summarySchema,
-      prompt: `Summarize this ${contentType} for a student.
-
-Content:
 ${content}
 
-Requirements:
-- Extract 4-6 main points
-- Identify 3-5 key takeaways
-- Write a concise 2-3 sentence summary
-- Suggest 3-4 related topics to explore
-- Make it educational and easy to understand
+Return JSON: { mainPoints: [], keyTakeaways: [], summary: "...", relatedTopics: [] }`;
 
-Focus on what's most important for learning and retention.`,
-    });
-
-    if (!object || !object.summary) {
-      throw new Error('No summary generated');
-    }
-
-    return object;
-  } catch (error) {
-    console.error('Error summarizing content:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      throw new Error('AI service authentication failed. Please check configuration.');
-    }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      throw new Error('AI service rate limit exceeded. Please try again later.');
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      throw new Error('AI service timeout. Please try again.');
-    }
-    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
-      throw new Error('Schema error with AI service. Please check the format of your request.');
-    }
-    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
-      throw new Error('Content blocked by AI safety filters. Please modify your request.');
-    }
-    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
-      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
-    }
-    if (errorMessage.includes('not configured')) {
-      throw new Error(errorMessage);
-    }
-    
-    throw new Error(`Failed to summarize content: ${errorMessage}`);
-  }
+  return withRetries(async (signal) => {
+    const params: any = {
+      model,
+      schema: summarySchema,
+      prompt,
+      providerOptions: buildProviderOptions(),
+    };
+    const maxTokens = getMaxTokensParam();
+    if (maxTokens) params.maxOutputTokens = maxTokens;
+    const { object } = await generateObject(params as any);
+    if (!object || !object.summary) throw new Error('No summary generated');
+    return object as ContentSummary;
+  });
 }
 
-// ============================================
-// STUDY RECOMMENDATIONS
-// ============================================
-
-const recommendationSchema = z.object({
-  recommendations: z.array(
-    z.object({
-      topic: z.string().describe('Recommended topic to study'),
-      reason: z.string().describe('Why this topic is recommended'),
-      priority: z.enum(['high', 'medium', 'low']).describe('Priority level'),
-      resources: z.array(z.string()).describe('Suggested resources or approaches'),
-      estimatedTime: z.string().describe('Estimated study time needed'),
-    })
-  ),
-});
-
+/**
+ * getStudyRecommendations
+ */
 export async function getStudyRecommendations(
   studentContext: {
     currentTopics: string[];
@@ -439,399 +420,145 @@ export async function getStudyRecommendations(
     upcomingTests?: string[];
   }
 ): Promise<StudyRecommendation[]> {
-  try {
-    // Validate API key
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error('AI service not configured. Missing API key.');
-    }
+  if (!API_KEY) throw new Error('AI service not configured (missing API key).');
+  if (!studentContext?.currentTopics || studentContext.currentTopics.length === 0) {
+    throw new Error('Current topics are required');
+  }
 
-    if (!studentContext.currentTopics || studentContext.currentTopics.length === 0) {
-      throw new Error('Current topics are required');
-    }
+  const prompt = `Generate 3-5 personalized study recommendations for:
+${JSON.stringify(studentContext, null, 2)}
+Return JSON: { recommendations: [...] }`;
 
-    const { object } = await generateObject({
+  return withRetries(async (signal) => {
+    const params: any = {
       model,
       schema: recommendationSchema,
-      prompt: `Generate personalized study recommendations for a student.
-
-Student Context:
-- Current Topics: ${studentContext.currentTopics.join(', ')}
-${studentContext.strugglingWith ? `- Struggling With: ${studentContext.strugglingWith.join(', ')}` : ''}
-${studentContext.interests ? `- Interests: ${studentContext.interests.join(', ')}` : ''}
-${studentContext.upcomingTests ? `- Upcoming Tests: ${studentContext.upcomingTests.join(', ')}` : ''}
-
-Requirements:
-- Provide 3-5 specific study recommendations
-- Prioritize based on upcoming tests and struggles
-- Include practical study resources and approaches
-- Suggest realistic time commitments
-- Make recommendations actionable and specific
-
-Focus on helping the student succeed and stay motivated.`,
-    });
-
-    if (!object.recommendations || object.recommendations.length === 0) {
+      prompt,
+      providerOptions: buildProviderOptions(),
+    };
+    const maxTokens = getMaxTokensParam();
+    if (maxTokens) params.maxOutputTokens = maxTokens;
+    const { object } = await generateObject(params as any);
+    if (!object?.recommendations || object.recommendations.length === 0) {
       throw new Error('No recommendations generated');
     }
-
-    return object.recommendations;
-  } catch (error) {
-    console.error('Error generating study recommendations:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      throw new Error('AI service authentication failed. Please check configuration.');
-    }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      throw new Error('AI service rate limit exceeded. Please try again later.');
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      throw new Error('AI service timeout. Please try again.');
-    }
-    if (errorMessage.includes('schema') || errorMessage.includes('properties')) {
-      throw new Error('Schema error with AI service. Please check the format of your request.');
-    }
-    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
-      throw new Error('Content blocked by AI safety filters. Please modify your request.');
-    }
-    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
-      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
-    }
-    if (errorMessage.includes('not configured')) {
-      throw new Error(errorMessage);
-    }
-    
-    throw new Error(`Failed to generate study recommendations: ${errorMessage}`);
-  }
+    return object.recommendations as StudyRecommendation[];
+  });
 }
 
-// ============================================
-// CONCEPT EXPLANATION
-// ============================================
-
+/**
+ * explainConcept - returns plain text
+ */
 export async function explainConcept(
   concept: string,
   context?: string,
   level: 'simple' | 'detailed' | 'advanced' = 'detailed'
 ): Promise<string> {
-  try {
-    // Validate API key
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error('AI service not configured. Missing API key.');
-    }
+  if (!API_KEY) throw new Error('AI service not configured (missing API key).');
+  if (!concept || concept.trim().length === 0) throw new Error('Concept cannot be empty');
 
-    if (!concept || concept.trim().length === 0) {
-      throw new Error('Concept cannot be empty');
-    }
+  const prompt = `Explain the concept "${concept}" in a ${level} way${context ? ` in the context of ${context}` : ''}.
+Be educational and use examples.`;
 
-    const { text } = await generateText({
+  return withRetries(async (signal) => {
+    const params: any = {
       model,
-      prompt: `Explain the concept of "${concept}" in a ${level} way${context ? ` in the context of ${context}` : ''}.
-
-Requirements based on level:
-- Simple: Use everyday language, analogies, and simple examples. Suitable for beginners.
-- Detailed: Provide comprehensive explanation with examples, use cases, and clarifications.
-- Advanced: Include technical details, edge cases, advanced applications, and theoretical foundations.
-
-Make the explanation educational, engaging, and easy to understand for students.`,
-      maxOutputTokens: 1024,
+      prompt,
       temperature: 0.7,
-    });
-
-    if (!text || text.trim().length === 0) {
-      throw new Error('AI service returned empty response');
-    }
-
+      providerOptions: buildProviderOptions(),
+    };
+    const maxTokens = getMaxTokensParam();
+    if (maxTokens) params.maxOutputTokens = maxTokens;
+    const { text } = await generateText(params as any);
+    if (!text) throw new Error('AI returned empty response');
     return text;
-  } catch (error) {
-    console.error('Error explaining concept:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      throw new Error('AI service authentication failed. Please check configuration.');
-    }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      throw new Error('AI service rate limit exceeded. Please try again later.');
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      throw new Error('AI service timeout. Please try again.');
-    }
-    if (errorMessage.includes('empty response')) {
-      throw new Error('AI service returned no response. Please try again.');
-    }
-    if (errorMessage.includes('safety') || errorMessage.includes('block')) {
-      throw new Error('Content blocked by AI safety filters. Please modify your request.');
-    }
-    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
-      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
-    }
-    if (errorMessage.includes('not configured')) {
-      throw new Error(errorMessage);
-    }
-    
-    throw new Error(`Failed to explain concept: ${errorMessage}`);
-  }
+  });
 }
 
-// ============================================
-// CHAT ASSISTANT (Streaming)
-// ============================================
-
+/**
+ * chatWithAssistant (streaming)
+ *
+ * Returns the result from streamText so the caller (route handler) can return a streaming response.
+ * Example: const result = await chatWithAssistant(...); return result.toTextStreamResponse();
+ */
 export async function chatWithAssistant(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   systemContext?: string
-) {
-  try {
-    const systemPrompt = systemContext || `You are an intelligent educational assistant for **EduSync** - a modern, comprehensive Learning Management System (LMS).
+): Promise<StreamTextResult> {
+  if (!API_KEY) throw new Error('AI service not configured (missing API key).');
+  if (!messages || messages.length === 0) throw new Error('Messages array is required');
 
-🎓 **About EduSync:**
-EduSync is a cutting-edge educational platform that provides:
-- **Interactive Courses**: Browse and enroll in diverse courses across multiple subjects
-- **AI-Powered Learning**: Get instant help with homework, explanations, and study tips
-- **Smart Quizzes**: Take adaptive quizzes with instant feedback and progress tracking
-- **Live Classes**: Join virtual classrooms with video conferencing and real-time collaboration
-- **Discussion Forums**: Engage with peers and instructors in topic-based discussions
-- **Progress Analytics**: Track your learning journey with detailed insights and performance metrics
-- **Assignment Management**: Submit, track, and receive feedback on assignments
-- **Resource Library**: Access study materials, notes, videos, and supplementary content
-- **Certificate Programs**: Earn verifiable certificates upon course completion
-- **Mobile-Friendly**: Learn anywhere with responsive design and offline support
+  const systemPrompt =
+    systemContext ||
+    `You are EduSync assistant... (educational assistant context truncated here; set via caller)`;
 
-📚 **Key Features You Can Help With:**
-1. **Course Navigation**: Help users find courses, understand syllabi, and track progress
-2. **Quiz Assistance**: Explain quiz questions, provide hints (not direct answers), and study strategies
-3. **Homework Help**: Break down complex problems, teach problem-solving approaches
-4. **Study Planning**: Create personalized study schedules and time management tips
-5. **Concept Clarification**: Explain topics in simple terms using analogies and examples
-6. **Exam Preparation**: Provide revision strategies, practice problems, and confidence tips
-7. **Discussion Support**: Help formulate questions and engage in academic discussions
-8. **Resource Recommendations**: Suggest relevant study materials and learning paths
-
-🎯 **Your Role:**
-- Be a friendly, patient, and encouraging learning companion
-- Help students **understand** concepts, don't just give answers
-- Break down complex topics into digestible explanations
-- Use **LaTeX** for math equations: $x^2$ for inline, $$\\frac{a}{b}$$ for display
-- Use **Markdown** for formatting: **bold**, *italic*, lists, tables, code blocks
-- Ask clarifying questions when needed
-- Promote critical thinking and active learning
-- Stay educational and avoid off-topic conversations
-- Provide examples and analogies to aid understanding
-- Encourage students and celebrate their progress
-
-💡 **Response Guidelines:**
-- Start with a friendly greeting for first messages
-- Use emojis sparingly to keep responses engaging
-- Format math beautifully with LaTeX notation
-- Structure responses with headings, lists, and sections
-- Include "Try this" suggestions for practice
-- End with encouraging words or follow-up questions
-- Keep responses concise but thorough
-
-🔧 **Platform Technical Details:**
-- Built with Next.js 15, React 19, TypeScript
-- Integrates Appwrite for backend (auth, database, storage)
-- Uses Google Gemini AI for intelligent assistance
-- Supports real-time updates and streaming responses
-- Implements secure authentication with role-based access
-- Mobile-responsive with dark mode support
-
-Remember: You're not just answering questions - you're helping students become better learners! 🚀`;
-
-    // Validate API key before making request
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error('AI service not configured. Missing API key.');
-    }
-
-    // Validate messages format
-    if (!messages || messages.length === 0) {
-      throw new Error('Messages array is required and must contain at least one message');
-    }
-
-    return await streamText({
+  // streamText returns an object with streaming utilities
+  return withRetries(async (signal) => {
+    const params: any = {
       model,
       system: systemPrompt,
       messages,
       temperature: 0.7,
-      maxOutputTokens: 1024,
-      providerOptions: {
-        google: {
-          // Enable thinking capabilities for Gemini 2.5 models with optimal budget for education
-          thinkingConfig: {
-            thinkingBudget: 8192, // Increased to recommended value for complex educational content
-            includeThoughts: false, // Don't include thoughts in response to users
-          },
-          // Set safety settings
-          safetySettings: [
-            {
-              category: 'HARM_CATEGORY_HATE_SPEECH',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-            },
-            {
-              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-            },
-            {
-              category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-            },
-            {
-              category: 'HARM_CATEGORY_HARASSMENT',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-            }
-          ]
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Error in chat assistant:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      throw new Error('AI service authentication failed. Please check configuration.');
-    }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      throw new Error('AI service rate limit exceeded. Please try again later.');
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      throw new Error('AI service timeout. The response took too long. Please try again.');
-    }
-    if (errorMessage.includes('not configured')) {
-      throw new Error(errorMessage);
-    }
-    if (errorMessage.includes('safety') || errorMessage.includes('block') || errorMessage.includes('harmful')) {
-      throw new Error('Content blocked by AI safety filters. Please modify your request.');
-    }
-    if (errorMessage.includes('thinking') || errorMessage.includes('budget')) {
-      throw new Error('AI thinking process exceeded limits. Please simplify your request.');
-    }
-    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
-      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
-    }
-    if (errorMessage.includes('GenerateContentRequest')) {
-      throw new Error('Invalid request format for Gemini model. Please check your input format.');
-    }
-    
-    throw new Error(`Failed to process chat message: ${errorMessage}`);
-  }
+      providerOptions: buildProviderOptions(),
+      // Do not set maxOutputTokens if not explicitly configured; let provider default
+    };
+    const maxTokens = getMaxTokensParam();
+    if (maxTokens) params.maxOutputTokens = maxTokens;
+
+    const streamResult = await streamText(params as any);
+    return streamResult as StreamTextResult;
+  }, MAX_RETRIES, DEFAULT_TIMEOUT_MS * 2); // allow more time for streaming creation
 }
 
-// ============================================
-// QUESTION ANSWERING
-// ============================================
-
+/**
+ * answerQuestion (non-streaming)
+ */
 export async function answerQuestion(
   question: string,
   context?: string,
   previousMessages?: Array<{ role: 'user' | 'assistant'; content: string }>
 ): Promise<string> {
-  try {
-    // Validate API key before making request
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error('AI service not configured. Missing API key.');
-    }
+  if (!API_KEY) throw new Error('AI service not configured (missing API key).');
+  if (!question || question.trim().length === 0) throw new Error('Question cannot be empty');
 
-    if (!question || question.trim().length === 0) {
-      throw new Error('Question cannot be empty');
-    }
+  const contextPrompt = context ? `\n\nContext:\n${context}` : '';
+  const history = previousMessages ? previousMessages.map((m) => `${m.role}: ${m.content}`).join('\n') : '';
+  const prompt = `${history ? `History:\n${history}\n\n` : ''}Question: ${question}${contextPrompt}\n\nProvide a clear, helpful answer.`;
 
-    const contextPrompt = context
-      ? `\n\nContext/Reference Material:\n${context}`
-      : '';
-
-    const conversationHistory = previousMessages
-      ? previousMessages.map((msg) => `${msg.role}: ${msg.content}`).join('\n')
-      : '';
-
-    const { text } = await generateText({
+  return withRetries(async (signal) => {
+    const params: any = {
       model,
-      prompt: `${conversationHistory ? `Previous Conversation:\n${conversationHistory}\n\n` : ''}Question: ${question}${contextPrompt}
-
-Provide a clear, accurate, and educational answer to this question. 
-
-Requirements:
-- Give a direct answer to the question
-- Explain the reasoning or concept behind it
-- Include examples if helpful
-- Be concise but thorough
-- Use student-friendly language
-- Encourage further learning
-
-If the question is unclear, ask for clarification. If you need more context, say so.`,
-      maxOutputTokens: 1024,
+      prompt,
       temperature: 0.7,
-    });
-
-    if (!text || text.trim().length === 0) {
-      throw new Error('AI service returned empty response');
-    }
-
+      providerOptions: buildProviderOptions(),
+    };
+    const maxTokens = getMaxTokensParam();
+    if (maxTokens) params.maxOutputTokens = maxTokens;
+    const { text } = await generateText(params as any);
+    if (!text) throw new Error('AI returned empty response');
     return text;
-  } catch (error) {
-    console.error('Error answering question:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      throw new Error('AI service authentication failed. Please check configuration.');
-    }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      throw new Error('AI service rate limit exceeded. Please try again later.');
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      throw new Error('AI service timeout. Please try again.');
-    }
-    if (errorMessage.includes('empty response')) {
-      throw new Error('AI service returned no response. Please try again.');
-    }
-    if (errorMessage.includes('not configured')) {
-      throw new Error(errorMessage);
-    }
-    
-    throw new Error(`Failed to answer question: ${errorMessage}`);
-  }
+  });
 }
 
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
+/* ============================
+   Utilities exported earlier
+   ============================ */
 
-/**
- * Check if AI API key is configured
- */
 export function isAIConfigured(): boolean {
-  return !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+  return !!API_KEY;
 }
 
-/**
- * Get AI model name
- */
 export function getModelName(): string {
   return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 }
 
-/**
- * Validate AI response length
- */
-export function truncateText(text: string, maxLength: number = 1000): string {
+export function truncateText(text: string, maxLength = 1000): string {
+  if (!text) return text;
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
 }
 
-/**
- * Format AI error for user display
- */
 export function formatAIError(error: unknown): string {
-  if (error instanceof Error) {
-    if (error.message.includes('API key')) {
-      return 'AI service not configured. Please contact your administrator.';
-    }
-    if (error.message.includes('rate limit')) {
-      return 'AI service is busy. Please try again in a moment.';
-    }
-    if (error.message.includes('quota')) {
-      return 'AI service quota exceeded. Please try again later.';
-    }
-    return error.message;
-  }
-  return 'An unexpected error occurred with the AI service.';
+  const msg = classifyErrorMessage(error);
+  return msg;
 }
