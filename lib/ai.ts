@@ -586,9 +586,7 @@ if (!API_KEY)
     "⚠️ Gemini API key missing — set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY in .env"
   );
 
-const google = createGoogleGenerativeAI({ apiKey: API_KEY });
 const modelName = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
-const model = google(modelName);
 
 const MAX_RETRIES = Number(process.env.GEMINI_RETRIES) || 2;
 const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 30000;
