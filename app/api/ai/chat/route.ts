@@ -1,108 +1,83 @@
-/**
- * AI Chat API Route
- * Handles real-time chat with AI assistant using streaming
- */
+import { NextRequest } from "next/server";
+import { chatWithAssistant } from "@/lib/ai";
 
-import { NextRequest } from 'next/server';
-import { chatWithAssistant } from '@/lib/ai';
-
-export const runtime = 'edge';
+export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
-    // Check API key is configured
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    const body = await req.json().catch(() => null);
+    if (!body) {
       return new Response(
-        JSON.stringify({
-          error: 'AI service not configured',
-          details: 'Missing required API key. Please contact administrator.'
-        }),
-        { status: 503, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const { messages, context } = await req.json();
+    const { messages, context } = body;
 
-    if (!messages || !Array.isArray(messages)) {
+    if (!Array.isArray(messages) || messages.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Messages array is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Messages array is required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    if (messages.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Messages array must not be empty' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    const stream = await chatWithAssistant(messages, context);
+
+    // ✅ 1st: Proper Vercel AI SDK format
+    if (stream && typeof (stream as any).toTextStreamResponse === "function") {
+      return (stream as any).toTextStreamResponse();
     }
 
-    // Validate messages format
-    for (const msg of messages) {
-      if (!msg.role || !msg.content) {
-        return new Response(
-          JSON.stringify({ error: 'Each message must have role and content' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      if (!['user', 'assistant'].includes(msg.role)) {
-        return new Response(
-          JSON.stringify({ error: 'Message role must be "user" or "assistant"' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      if (typeof msg.content !== 'string' || msg.content.trim().length === 0) {
-        return new Response(
-          JSON.stringify({ error: 'Message content must be a non-empty string' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
+    // ✅ 2nd: Raw readable stream fallback
+    if (stream && (stream as any).stream) {
+      return new Response((stream as any).stream, {
+        headers: { "Content-Type": "text/event-stream" },
+      });
     }
 
-    // Get streaming response from AI
-    const result = await chatWithAssistant(messages, context);
+    // ✅ 3rd: Raw body fallback
+    if (stream && (stream as any).body) {
+      return new Response((stream as any).body, {
+        headers: { "Content-Type": "text/event-stream" },
+      });
+    }
 
-    // Return the streaming response
-    return result.toTextStreamResponse();
-  } catch (error) {
-    console.error('AI chat error:', error);
-    
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    let statusCode = 500;
-    let userMessage = 'Failed to process chat message';
+    // ❌ Invalid case
+    console.error("[AI Route] Unsupported AI response shape", stream);
+    return new Response(
+      JSON.stringify({ error: "Invalid AI streaming response shape" }),
+      { status: 502, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error: any) {
+    console.error("AI Chat Route Error:", error);
+    const msg = error?.message || "Unknown error";
+    let status = 500;
+    let userError = "AI service error. Please try again.";
 
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      statusCode = 503;
-      userMessage = 'AI service authentication failed';
-    } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      statusCode = 429;
-      userMessage = 'AI service rate limited. Please try again later.';
-    } else if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      statusCode = 504;
-      userMessage = 'AI service timeout. Please try again.';
-    } else if (errorMessage.includes('not configured')) {
-      statusCode = 503;
-      userMessage = errorMessage;
-    } else if (errorMessage.includes('safety') || errorMessage.includes('block') || errorMessage.includes('harmful')) {
-      statusCode = 400;
-      userMessage = 'Content blocked by AI safety filters. Please modify your request.';
-    } else if (errorMessage.includes('thinking') || errorMessage.includes('budget')) {
-      statusCode = 413;
-      userMessage = 'Request too complex. Please simplify your question.';
-    } else if (errorMessage.includes('model') || errorMessage.includes('not available')) {
-      statusCode = 503;
-      userMessage = 'AI model temporarily unavailable. System will try an alternative.';
-    } else if (errorMessage.includes('GenerateContentRequest')) {
-      statusCode = 400;
-      userMessage = 'Invalid request format.';
+    if (msg.includes("API key") || msg.includes("401")) {
+      status = 503;
+      userError = "AI authentication failed.";
+    } else if (msg.includes("429")) {
+      status = 429;
+      userError = "AI rate limited. Try again later.";
+    } else if (msg.includes("timeout")) {
+      status = 504;
+      userError = "AI response timeout. Try again.";
+    } else if (msg.includes("safety")) {
+      status = 400;
+      userError = "Blocked by AI safety filters.";
+    } else if (msg.includes("model")) {
+      status = 503;
+      userError = "AI model temporarily unavailable.";
+    } else if (msg.includes("budget")) {
+      status = 413;
+      userError = "Request too complex. Simplify it.";
     }
 
     return new Response(
-      JSON.stringify({
-        error: userMessage,
-        details: errorMessage,
-      }),
-      { status: statusCode, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: userError, details: msg }),
+      { status, headers: { "Content-Type": "application/json" } }
     );
   }
 }
