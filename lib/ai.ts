@@ -574,145 +574,176 @@ Make the explanation educational, engaging, and easy to understand for students.
 }
 
 // ============================================
-// CHAT ASSISTANT (Streaming)
+// CHAT ASSISTANT (Streaming - Fixed + Enhanced)
 // ============================================
 
+import { streamText } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+
+const API_KEY =
+  process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
+
+if (!API_KEY) {
+  console.warn(
+    "⚠️ Gemini API key not found. Set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY in .env"
+  );
+}
+
+const google = createGoogleGenerativeAI({ apiKey: API_KEY });
+
+// Default model (fallback safe)
+const modelName = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
+const model = google(modelName);
+
+// Retry + timeout configuration
+const MAX_RETRIES = Number(process.env.GEMINI_RETRIES) || 2;
+const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 30000;
+const MAX_TOKENS = Number(process.env.GEMINI_MAX_TOKENS) || 1024;
+
+/** Helper: Retry with exponential backoff */
+async function withRetries<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  retries = MAX_RETRIES,
+  timeoutMs = TIMEOUT_MS
+): Promise<T> {
+  let attempt = 0;
+  let lastError: any = null;
+
+  while (attempt <= retries) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const result = await fn(controller.signal);
+      clearTimeout(timer);
+      return result;
+    } catch (error: any) {
+      clearTimeout(timer);
+      lastError = error;
+      attempt++;
+
+      const message = error?.message || String(error);
+      const retryable =
+        message.includes("timeout") ||
+        message.includes("DEADLINE_EXCEEDED") ||
+        message.includes("ECONNRESET") ||
+        message.includes("429") ||
+        /5\d{2}/.test(message);
+
+      if (!retryable || attempt > retries) throw error;
+
+      const backoff = 500 * Math.pow(2, attempt);
+      console.warn(
+        `[AI Chat] Retry #${attempt} after ${backoff}ms due to:`,
+        message
+      );
+      await new Promise((r) => setTimeout(r, backoff));
+    }
+  }
+
+  throw lastError ?? new Error("AI Chat failed after all retries.");
+}
+
+/** Main Streaming Assistant */
 export async function chatWithAssistant(
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
   systemContext?: string
 ) {
   try {
-    const systemPrompt = systemContext || `You are an intelligent educational assistant for **EduSync** - a modern, comprehensive Learning Management System (LMS).
+    if (!API_KEY) throw new Error("AI service not configured. Missing API key.");
+
+    if (!messages || messages.length === 0)
+      throw new Error("Messages array is required and must not be empty.");
+
+    const systemPrompt =
+      systemContext ||
+      `You are **EduSync AI**, a friendly and intelligent learning assistant for students and teachers.
 
 🎓 **About EduSync:**
-EduSync is a cutting-edge educational platform that provides:
-- **Interactive Courses**: Browse and enroll in diverse courses across multiple subjects
-- **AI-Powered Learning**: Get instant help with homework, explanations, and study tips
-- **Smart Quizzes**: Take adaptive quizzes with instant feedback and progress tracking
-- **Live Classes**: Join virtual classrooms with video conferencing and real-time collaboration
-- **Discussion Forums**: Engage with peers and instructors in topic-based discussions
-- **Progress Analytics**: Track your learning journey with detailed insights and performance metrics
-- **Assignment Management**: Submit, track, and receive feedback on assignments
-- **Resource Library**: Access study materials, notes, videos, and supplementary content
-- **Certificate Programs**: Earn verifiable certificates upon course completion
-- **Mobile-Friendly**: Learn anywhere with responsive design and offline support
+A modern LMS offering:
+- Interactive courses
+- AI-powered learning
+- Smart quizzes & live classes
+- Assignment management & analytics
+- Community discussions
+- Resource library with certification
 
-📚 **Key Features You Can Help With:**
-1. **Course Navigation**: Help users find courses, understand syllabi, and track progress
-2. **Quiz Assistance**: Explain quiz questions, provide hints (not direct answers), and study strategies
-3. **Homework Help**: Break down complex problems, teach problem-solving approaches
-4. **Study Planning**: Create personalized study schedules and time management tips
-5. **Concept Clarification**: Explain topics in simple terms using analogies and examples
-6. **Exam Preparation**: Provide revision strategies, practice problems, and confidence tips
-7. **Discussion Support**: Help formulate questions and engage in academic discussions
-8. **Resource Recommendations**: Suggest relevant study materials and learning paths
+💡 **Your Role:**
+Be a knowledgeable, supportive mentor.  
+Explain concepts clearly, teach reasoning, avoid giving direct exam answers.  
+Encourage curiosity and provide structured explanations.  
+Use **Markdown** and **LaTeX** for clarity.
 
-🎯 **Your Role:**
-- Be a friendly, patient, and encouraging learning companion
-- Help students **understand** concepts, don't just give answers
-- Break down complex topics into digestible explanations
-- Use **LaTeX** for math equations: $x^2$ for inline, $$\\frac{a}{b}$$ for display
-- Use **Markdown** for formatting: **bold**, *italic*, lists, tables, code blocks
-- Ask clarifying questions when needed
-- Promote critical thinking and active learning
-- Stay educational and avoid off-topic conversations
-- Provide examples and analogies to aid understanding
-- Encourage students and celebrate their progress
+⚙️ **Response Style:**
+- Friendly & concise
+- Use headings, lists, and short examples
+- Include math in LaTeX: $E = mc^2$
+- End with a motivational or follow-up question
+`;
 
-💡 **Response Guidelines:**
-- Start with a friendly greeting for first messages
-- Use emojis sparingly to keep responses engaging
-- Format math beautifully with LaTeX notation
-- Structure responses with headings, lists, and sections
-- Include "Try this" suggestions for practice
-- End with encouraging words or follow-up questions
-- Keep responses concise but thorough
-
-🔧 **Platform Technical Details:**
-- Built with Next.js 15, React 19, TypeScript
-- Integrates Appwrite for backend (auth, database, storage)
-- Uses Google Gemini AI for intelligent assistance
-- Supports real-time updates and streaming responses
-- Implements secure authentication with role-based access
-- Mobile-responsive with dark mode support
-
-Remember: You're not just answering questions - you're helping students become better learners! 🚀`;
-
-    // Validate API key before making request
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error('AI service not configured. Missing API key.');
-    }
-
-    // Validate messages format
-    if (!messages || messages.length === 0) {
-      throw new Error('Messages array is required and must contain at least one message');
-    }
-
-    return await streamText({
-      model,
-      system: systemPrompt,
-      messages,
-      temperature: 0.7,
-      maxOutputTokens: 1024,
-      providerOptions: {
-        google: {
-          // Enable thinking capabilities for Gemini 2.5 models with optimal budget for education
-          thinkingConfig: {
-            thinkingBudget: 8192, // Increased to recommended value for complex educational content
-            includeThoughts: false, // Don't include thoughts in response to users
+    // Execute Gemini stream with retries
+    return await withRetries(async (signal) => {
+      const stream = await streamText({
+        model,
+        system: systemPrompt,
+        messages,
+        temperature: 0.7,
+        maxOutputTokens: MAX_TOKENS,
+        providerOptions: {
+          google: {
+            thinkingConfig: {
+              thinkingBudget: 4096,
+              includeThoughts: false,
+            },
+            safetySettings: [
+              {
+                category: "HARM_CATEGORY_HATE_SPEECH",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+              },
+              {
+                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+              },
+              {
+                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+              },
+              {
+                category: "HARM_CATEGORY_HARASSMENT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+              },
+            ],
           },
-          // Set safety settings
-          safetySettings: [
-            {
-              category: 'HARM_CATEGORY_HATE_SPEECH',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-            },
-            {
-              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-            },
-            {
-              category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-            },
-            {
-              category: 'HARM_CATEGORY_HARASSMENT',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-            }
-          ]
-        }
+        },
+        signal,
+      });
+
+      // Ensure valid stream shape
+      if (!stream || typeof (stream as any).toTextStreamResponse !== "function") {
+        console.error("[AI Chat] Invalid stream object returned by Gemini SDK.");
+        throw new Error("Invalid streaming response from AI service.");
       }
+
+      return stream;
     });
-  } catch (error) {
-    console.error('Error in chat assistant:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-      throw new Error('AI service authentication failed. Please check configuration.');
-    }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      throw new Error('AI service rate limit exceeded. Please try again later.');
-    }
-    if (errorMessage.includes('timeout') || errorMessage.includes('DEADLINE_EXCEEDED')) {
-      throw new Error('AI service timeout. The response took too long. Please try again.');
-    }
-    if (errorMessage.includes('not configured')) {
-      throw new Error(errorMessage);
-    }
-    if (errorMessage.includes('safety') || errorMessage.includes('block') || errorMessage.includes('harmful')) {
-      throw new Error('Content blocked by AI safety filters. Please modify your request.');
-    }
-    if (errorMessage.includes('thinking') || errorMessage.includes('budget')) {
-      throw new Error('AI thinking process exceeded limits. Please simplify your request.');
-    }
-    if (errorMessage.includes('model') || errorMessage.includes('not available')) {
-      throw new Error('Selected AI model is currently unavailable. System will try to use an alternative model.');
-    }
-    if (errorMessage.includes('GenerateContentRequest')) {
-      throw new Error('Invalid request format for Gemini model. Please check your input format.');
-    }
-    
-    throw new Error(`Failed to process chat message: ${errorMessage}`);
+  } catch (error: any) {
+    console.error("❌ EduSync AI Chat Error:", error);
+
+    const msg = error?.message || "Unknown AI error";
+
+    if (msg.includes("API key") || msg.includes("401"))
+      throw new Error("AI authentication failed. Please check credentials.");
+    if (msg.includes("429"))
+      throw new Error("AI rate limit reached. Please try again later.");
+    if (msg.includes("timeout"))
+      throw new Error("AI service timeout. Please retry.");
+    if (msg.includes("safety") || msg.includes("harmful"))
+      throw new Error("Content blocked by safety filters.");
+    if (msg.includes("model") || msg.includes("not available"))
+      throw new Error("AI model currently unavailable.");
+    if (msg.includes("budget"))
+      throw new Error("Request too complex. Please simplify your question.");
+
+    throw new Error(`AI chat failed: ${msg}`);
   }
 }
 
