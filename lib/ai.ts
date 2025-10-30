@@ -574,113 +574,100 @@ Make the explanation educational, engaging, and easy to understand for students.
 }
 
 // ============================================
-// CHAT ASSISTANT (Streaming - Fixed + Enhanced)
+// CHAT ASSISTANT (Streaming - Stable & Production Fixed)
 // ============================================
 
-import { streamText } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-
+// ---- Global AI Config ---- //
 const API_KEY =
   process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
 
-if (!API_KEY) {
+if (!API_KEY)
   console.warn(
-    "⚠️ Gemini API key not found. Set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY in .env"
+    "⚠️ Gemini API key missing — set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY in .env"
   );
-}
 
 const google = createGoogleGenerativeAI({ apiKey: API_KEY });
-
-// Default model (fallback safe)
 const modelName = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
 const model = google(modelName);
 
-// Retry + timeout configuration
 const MAX_RETRIES = Number(process.env.GEMINI_RETRIES) || 2;
 const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 30000;
 const MAX_TOKENS = Number(process.env.GEMINI_MAX_TOKENS) || 1024;
 
-/** Helper: Retry with exponential backoff */
+// ---- Helper: retry wrapper with timeout ---- //
 async function withRetries<T>(
   fn: (signal: AbortSignal) => Promise<T>,
   retries = MAX_RETRIES,
   timeoutMs = TIMEOUT_MS
 ): Promise<T> {
   let attempt = 0;
-  let lastError: any = null;
+  let lastError: any;
 
   while (attempt <= retries) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
       const result = await fn(controller.signal);
       clearTimeout(timer);
       return result;
-    } catch (error: any) {
+    } catch (err: any) {
       clearTimeout(timer);
-      lastError = error;
+      lastError = err;
       attempt++;
 
-      const message = error?.message || String(error);
+      const msg = err?.message || String(err);
       const retryable =
-        message.includes("timeout") ||
-        message.includes("DEADLINE_EXCEEDED") ||
-        message.includes("ECONNRESET") ||
-        message.includes("429") ||
-        /5\d{2}/.test(message);
+        msg.includes("timeout") ||
+        msg.includes("ECONNRESET") ||
+        msg.includes("DEADLINE_EXCEEDED") ||
+        msg.includes("429") ||
+        /5\d{2}/.test(msg);
 
-      if (!retryable || attempt > retries) throw error;
+      if (!retryable || attempt > retries) throw err;
 
       const backoff = 500 * Math.pow(2, attempt);
-      console.warn(
-        `[AI Chat] Retry #${attempt} after ${backoff}ms due to:`,
-        message
-      );
+      console.warn(`[EduSync AI] Retry #${attempt} after ${backoff}ms:`, msg);
       await new Promise((r) => setTimeout(r, backoff));
     }
   }
 
-  throw lastError ?? new Error("AI Chat failed after all retries.");
+  throw lastError ?? new Error("AI request failed after retries");
 }
 
-/** Main Streaming Assistant */
+// ---- Main Assistant ---- //
 export async function chatWithAssistant(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   systemContext?: string
 ) {
   try {
-    if (!API_KEY) throw new Error("AI service not configured. Missing API key.");
-
-    if (!messages || messages.length === 0)
-      throw new Error("Messages array is required and must not be empty.");
+    if (!API_KEY)
+      throw new Error("AI service not configured. Missing API key.");
+    if (!messages?.length)
+      throw new Error("Messages array must not be empty.");
 
     const systemPrompt =
       systemContext ||
-      `You are **EduSync AI**, a friendly and intelligent learning assistant for students and teachers.
+      `You are **EduSync AI**, a helpful learning assistant for students and teachers.
 
-🎓 **About EduSync:**
-A modern LMS offering:
-- Interactive courses
-- AI-powered learning
-- Smart quizzes & live classes
-- Assignment management & analytics
-- Community discussions
-- Resource library with certification
+🎓 **About EduSync**
+A modern LMS with:
+- Interactive courses & quizzes
+- AI-powered tutoring
+- Assignments, analytics, & discussions
 
-💡 **Your Role:**
-Be a knowledgeable, supportive mentor.  
-Explain concepts clearly, teach reasoning, avoid giving direct exam answers.  
-Encourage curiosity and provide structured explanations.  
-Use **Markdown** and **LaTeX** for clarity.
+💡 **Your Role**
+Be a patient mentor.  
+Explain clearly, encourage curiosity, and never reveal full answers to graded content.  
+Use **Markdown** and **LaTeX** for math.
 
-⚙️ **Response Style:**
-- Friendly & concise
-- Use headings, lists, and short examples
-- Include math in LaTeX: $E = mc^2$
-- End with a motivational or follow-up question
-`;
+⚙️ **Response Style**
+- Friendly and structured  
+- Use headings, bullet points, and short examples  
+- Show math as $E = mc^2$  
+- End with an encouraging question or summary.`;
 
-    // Execute Gemini stream with retries
+    // ---- Execute streaming call with retries ---- //
     return await withRetries(async (signal) => {
       const stream = await streamText({
         model,
@@ -690,38 +677,20 @@ Use **Markdown** and **LaTeX** for clarity.
         maxOutputTokens: MAX_TOKENS,
         providerOptions: {
           google: {
-            thinkingConfig: {
-              thinkingBudget: 4096,
-              includeThoughts: false,
-            },
+            thinkingConfig: { thinkingBudget: 4096, includeThoughts: false },
             safetySettings: [
-              {
-                category: "HARM_CATEGORY_HATE_SPEECH",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE",
-              },
-              {
-                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE",
-              },
-              {
-                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE",
-              },
-              {
-                category: "HARM_CATEGORY_HARASSMENT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE",
-              },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
             ],
           },
         },
         signal,
       });
 
-      // Ensure valid stream shape
-      if (!stream || typeof (stream as any).toTextStreamResponse !== "function") {
-        console.error("[AI Chat] Invalid stream object returned by Gemini SDK.");
-        throw new Error("Invalid streaming response from AI service.");
-      }
+      if (!stream?.toTextStreamResponse)
+        throw new Error("Invalid response from Gemini AI service");
 
       return stream;
     });
@@ -731,7 +700,7 @@ Use **Markdown** and **LaTeX** for clarity.
     const msg = error?.message || "Unknown AI error";
 
     if (msg.includes("API key") || msg.includes("401"))
-      throw new Error("AI authentication failed. Please check credentials.");
+      throw new Error("AI authentication failed. Check credentials.");
     if (msg.includes("429"))
       throw new Error("AI rate limit reached. Please try again later.");
     if (msg.includes("timeout"))
