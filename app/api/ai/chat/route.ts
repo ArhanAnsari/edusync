@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { chatWithAssistant } from "@/lib/ai";
 
-export const runtime = "edge";
+export const runtime = "nodejs"; // ✅ FIXED: Use Node.js runtime for stable streaming
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,26 +24,30 @@ export async function POST(req: NextRequest) {
 
     const stream = await chatWithAssistant(messages, context);
 
-    // ✅ 1st: Proper Vercel AI SDK format
     if (stream && typeof (stream as any).toTextStreamResponse === "function") {
       return (stream as any).toTextStreamResponse();
     }
 
-    // ✅ 2nd: Raw readable stream fallback
     if (stream && (stream as any).stream) {
       return new Response((stream as any).stream, {
-        headers: { "Content-Type": "text/event-stream" },
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
       });
     }
 
-    // ✅ 3rd: Raw body fallback
     if (stream && (stream as any).body) {
       return new Response((stream as any).body, {
-        headers: { "Content-Type": "text/event-stream" },
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
       });
     }
 
-    // ❌ Invalid case
     console.error("[AI Route] Unsupported AI response shape", stream);
     return new Response(
       JSON.stringify({ error: "Invalid AI streaming response shape" }),
