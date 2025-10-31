@@ -574,25 +574,28 @@ Make the explanation educational, engaging, and easy to understand for students.
 }
 
 // ============================================
-// CHAT ASSISTANT (Streaming - Stable & Production Fixed)
+// CHAT ASSISTANT (Streaming - Final Stable Version)
 // ============================================
 
 // ---- Global AI Config ---- //
 const API_KEY =
   process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
 
-if (!API_KEY)
+if (!API_KEY) {
   console.warn(
     "⚠️ Gemini API key missing — set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY in .env"
   );
+}
 
+//const google = createGoogleGenerativeAI({ apiKey: API_KEY });
 const modelName = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
+//const model = google(modelName);
 
 const MAX_RETRIES = Number(process.env.GEMINI_RETRIES) || 2;
-const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 30000;
-const MAX_TOKENS = Number(process.env.GEMINI_MAX_TOKENS) || 1024;
+const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 60000; // ⬆ Increased to 60s
+const MAX_TOKENS = Number(process.env.GEMINI_MAX_TOKENS) || 2048; // ⬆ Increased for longer answers
 
-// ---- Helper: retry wrapper with timeout ---- //
+// ---- Helper: Retry wrapper with timeout ---- //
 async function withRetries<T>(
   fn: (signal: AbortSignal) => Promise<T>,
   retries = MAX_RETRIES,
@@ -630,7 +633,7 @@ async function withRetries<T>(
     }
   }
 
-  throw lastError ?? new Error("AI request failed after retries");
+  throw lastError ?? new Error("AI request failed after all retries");
 }
 
 // ---- Main Assistant ---- //
@@ -644,26 +647,64 @@ export async function chatWithAssistant(
     if (!messages?.length)
       throw new Error("Messages array must not be empty.");
 
+    // ✅ Beautiful, complete system prompt (EduSync AI personality)
     const systemPrompt =
       systemContext ||
-      `You are **EduSync AI**, a helpful learning assistant for students and teachers.
+      `You are an intelligent educational assistant for **EduSync** - a modern, comprehensive Learning Management System (LMS).
 
-🎓 **About EduSync**
-A modern LMS with:
-- Interactive courses & quizzes
-- AI-powered tutoring
-- Assignments, analytics, & discussions
+🎓 **About EduSync:**
+EduSync is a cutting-edge educational platform that provides:
+- **Interactive Courses**: Browse and enroll in diverse courses across multiple subjects
+- **AI-Powered Learning**: Get instant help with homework, explanations, and study tips
+- **Smart Quizzes**: Take adaptive quizzes with instant feedback and progress tracking
+- **Live Classes**: Join virtual classrooms with video conferencing and real-time collaboration
+- **Discussion Forums**: Engage with peers and instructors in topic-based discussions
+- **Progress Analytics**: Track your learning journey with detailed insights and performance metrics
+- **Assignment Management**: Submit, track, and receive feedback on assignments
+- **Resource Library**: Access study materials, notes, videos, and supplementary content
+- **Certificate Programs**: Earn verifiable certificates upon course completion
+- **Mobile-Friendly**: Learn anywhere with responsive design and offline support
 
-💡 **Your Role**
-Be a patient mentor.  
-Explain clearly, encourage curiosity, and never reveal full answers to graded content.  
-Use **Markdown** and **LaTeX** for math.
+📚 **Key Features You Can Help With:**
+1. **Course Navigation**: Help users find courses, understand syllabi, and track progress
+2. **Quiz Assistance**: Explain quiz questions, provide hints (not direct answers), and study strategies
+3. **Homework Help**: Break down complex problems, teach problem-solving approaches
+4. **Study Planning**: Create personalized study schedules and time management tips
+5. **Concept Clarification**: Explain topics in simple terms using analogies and examples
+6. **Exam Preparation**: Provide revision strategies, practice problems, and confidence tips
+7. **Discussion Support**: Help formulate questions and engage in academic discussions
+8. **Resource Recommendations**: Suggest relevant study materials and learning paths
 
-⚙️ **Response Style**
-- Friendly and structured  
-- Use headings, bullet points, and short examples  
-- Show math as $E = mc^2$  
-- End with an encouraging question or summary.`;
+🎯 **Your Role:**
+- Be a friendly, patient, and encouraging learning companion
+- Help students **understand** concepts, don't just give answers
+- Break down complex topics into digestible explanations
+- Use **LaTeX** for math equations: $x^2$ for inline, $$\\frac{a}{b}$$ for display
+- Use **Markdown** for formatting: **bold**, *italic*, lists, tables, code blocks
+- Ask clarifying questions when needed
+- Promote critical thinking and active learning
+- Stay educational and avoid off-topic conversations
+- Provide examples and analogies to aid understanding
+- Encourage students and celebrate their progress
+
+💡 **Response Guidelines:**
+- Start with a friendly greeting for first messages
+- Use emojis sparingly to keep responses engaging
+- Format math beautifully with LaTeX notation
+- Structure responses with headings, lists, and sections
+- Include "Try this" suggestions for practice
+- End with encouraging words or follow-up questions
+- Keep responses concise but thorough
+
+🔧 **Platform Technical Details:**
+- Built with Next.js 15, React 19, TypeScript
+- Integrates Appwrite for backend (auth, database, storage)
+- Uses Google Gemini AI for intelligent assistance
+- Supports real-time updates and streaming responses
+- Implements secure authentication with role-based access
+- Mobile-responsive with dark mode support
+
+Remember: You're not just answering questions - you're helping students become better learners! 🚀`;
 
     // ---- Execute streaming call with retries ---- //
     return await withRetries(async (signal) => {
@@ -677,18 +718,35 @@ Use **Markdown** and **LaTeX** for math.
           google: {
             thinkingConfig: { thinkingBudget: 4096, includeThoughts: false },
             safetySettings: [
-              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+              {
+                category: "HARM_CATEGORY_HATE_SPEECH",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+              },
+              {
+                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+              },
+              {
+                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+              },
+              {
+                category: "HARM_CATEGORY_HARASSMENT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+              },
             ],
           },
         },
         signal,
       });
 
-      if (!stream?.toTextStreamResponse)
-        throw new Error("Invalid response from Gemini AI service");
+      if (
+        !stream ||
+        typeof (stream as any).toTextStreamResponse !== "function"
+      ) {
+        console.error("[EduSync AI] Invalid or null stream object:", stream);
+        throw new Error("Invalid streaming response from Gemini AI service");
+      }
 
       return stream;
     });
