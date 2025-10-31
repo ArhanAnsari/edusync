@@ -587,9 +587,7 @@ if (!API_KEY) {
   );
 }
 
-//const google = createGoogleGenerativeAI({ apiKey: API_KEY });
 const modelName = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
-//const model = google(modelName);
 
 const MAX_RETRIES = Number(process.env.GEMINI_RETRIES) || 2;
 const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 60000; // ⬆ Increased to 60s
@@ -679,7 +677,7 @@ EduSync is a cutting-edge educational platform that provides:
 - Be a friendly, patient, and encouraging learning companion
 - Help students **understand** concepts, don't just give answers
 - Break down complex topics into digestible explanations
-- Use **LaTeX** for math equations: $x^2$ for inline, $$\\frac{a}{b}$$ for display
+- Use **LaTeX** for math equations: $x^2$ for inline, $$\\\\frac{a}{b}$$ for display
 - Use **Markdown** for formatting: **bold**, *italic*, lists, tables, code blocks
 - Ask clarifying questions when needed
 - Promote critical thinking and active learning
